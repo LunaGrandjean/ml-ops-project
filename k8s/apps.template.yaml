@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mlflow, namespace: trajectory-mlops}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: mlflow}
+  template:
+    metadata:
+      labels: {app: mlflow}
+    spec:
+      securityContext: {fsGroup: 10001}
+      containers:
+        - name: mlflow
+          image: __REGISTRY__/trajectory-tracking:__TAG__
+          args:
+            - python
+            - -m
+            - mlflow
+            - server
+            - --host=0.0.0.0
+            - --port=5000
+            - --backend-store-uri=sqlite:////home/app/mlflow/mlflow.db
+            - --serve-artifacts
+            - --artifacts-destination=s3://mlflow-artifacts
+            - --allowed-hosts=localhost:*,127.0.0.1:*,mlflow,mlflow:*
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef: {name: storage-credentials, key: MINIO_ROOT_USER}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef: {name: storage-credentials, key: MINIO_ROOT_PASSWORD}
+            - {name: MLFLOW_S3_ENDPOINT_URL, value: "http://minio:9000"}
+            - {name: AWS_DEFAULT_REGION, value: us-east-1}
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+              httpHeaders:
+                - {name: Host, value: localhost}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          volumeMounts:
+            - {name: metadata, mountPath: /home/app/mlflow}
+      volumes:
+        - name: metadata
+          persistentVolumeClaim: {claimName: mlflow-data}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mlflow, namespace: trajectory-mlops}
+spec:
+  selector: {app: mlflow}
+  ports:
+    - {port: 5000, targetPort: 5000}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: api, namespace: trajectory-mlops}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      containers:
+        - name: api
+          image: __REGISTRY__/trajectory-api:__TAG__
+          env:
+            - {name: MLFLOW_TRACKING_URI, value: "http://mlflow:5000"}
+            - name: MODEL_URI
+              value: __MODEL_URI_JSON__
+          ports:
+            - containerPort: 8000
+          startupProbe:
+            httpGet: {path: /health/live, port: 8000}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8000}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8000}
+            periodSeconds: 15
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 2Gi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: api, namespace: trajectory-mlops}
+spec:
+  selector: {app: api}
+  ports:
+    - {port: 8000, targetPort: 8000}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ui, namespace: trajectory-mlops}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: ui}
+  template:
+    metadata:
+      labels: {app: ui}
+    spec:
+      containers:
+        - name: ui
+          image: __REGISTRY__/trajectory-ui:__TAG__
+          env:
+            - {name: API_URL, value: "http://api:8000"}
+          ports:
+            - containerPort: 8501
+          readinessProbe:
+            httpGet: {path: /_stcore/health, port: 8501}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ui, namespace: trajectory-mlops}
+spec:
+  selector: {app: ui}
+  ports:
+    - {port: 8501, targetPort: 8501}

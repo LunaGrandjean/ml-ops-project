@@ -1,0 +1,43 @@
+stages:
+  prepare:
+    cmd: python -m trajectory_mlops.data.prepare
+    deps:
+      - data/raw
+      - src/trajectory_mlops/data/prepare.py
+      - src/trajectory_mlops/config.py
+    params:
+      - data
+    outs:
+      - data/processed/manifest.json
+  train:
+    cmd: python -m trajectory_mlops.models.train
+    deps:
+      - data/processed/manifest.json
+      - src/trajectory_mlops/models
+      - src/trajectory_mlops/data/images.py
+      - src/trajectory_mlops/config.py
+      - pyproject.toml
+      - uv.lock
+    params:
+      - data.image_size
+      - training
+    outs:
+      - artifacts/model.pt
+      - artifacts/run.json
+  evaluate:
+    cmd: python -m trajectory_mlops.models.evaluate
+    deps:
+      - artifacts/model.pt
+      - artifacts/run.json
+      - data/processed/manifest.json
+      - src/trajectory_mlops/models
+      - src/trajectory_mlops/config.py
+    params:
+      - data.image_size
+      - evaluation
+    metrics:
+      - reports/evaluation.json:
+          cache: false
+    outs:
+      - artifacts/registry.json
+

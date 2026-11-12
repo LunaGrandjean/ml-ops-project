@@ -1,0 +1,15 @@
+data:
+  raw_dir: data/raw
+  manifest: data/processed/manifest.json
+  image_size: 128
+  seed: 42
+  train_fraction: 0.7
+  validation_fraction: 0.15
+training:
+  epochs: 10
+  batch_size: 32
+  learning_rate: 0.001
+  seed: 42
+evaluation:
+  min_accuracy: 0.21
+

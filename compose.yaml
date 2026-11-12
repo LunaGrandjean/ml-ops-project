@@ -1,0 +1,77 @@
+name: trajectory-mlops
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Copier .env.example vers .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Définir le mot de passe MinIO}
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+    volumes: [minio-data:/data]
+  init-bucket:
+    image: minio/mc:latest
+    depends_on:
+      minio: {condition: service_started}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for attempt in $$(seq 1 60); do
+          if mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; then
+            mc mb --ignore-existing local/mlflow-artifacts &&
+            mc mb --ignore-existing local/datasets && exit 0
+          fi
+          sleep 2
+        done
+        exit 1
+  mlflow:
+    build: {context: ., target: tracking}
+    command:
+      - python
+      - -m
+      - mlflow
+      - server
+      - --host=0.0.0.0
+      - --port=5000
+      - --backend-store-uri=sqlite:////home/app/mlflow/mlflow.db
+      - --serve-artifacts
+      - --artifacts-destination=s3://mlflow-artifacts
+      - --allowed-hosts=localhost:*,127.0.0.1:*,mlflow,mlflow:*
+    environment:
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_DEFAULT_REGION: us-east-1
+    ports: ["127.0.0.1:5001:5000"]
+    volumes: [mlflow-data:/home/app/mlflow]
+    depends_on:
+      init-bucket: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  api:
+    build: {context: ., target: api}
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_URI: ${MODEL_URI:-}
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      mlflow: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  ui:
+    build: {context: ., target: ui}
+    environment: {API_URL: "http://api:8000"}
+    ports: ["127.0.0.1:8501:8501"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  minio-data:
+  mlflow-data:

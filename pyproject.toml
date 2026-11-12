@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trajectory-mlops"
+version = "0.1.0"
+description = "Classification d'images de trajectoires : pipeline, API et déploiement MLOps"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "pydantic-settings>=2.7,<3",
+  "python-multipart>=0.0.20,<1",
+  "pillow>=11,<13",
+  "numpy>=2,<3",
+  "pyyaml>=6,<7",
+]
+
+[project.optional-dependencies]
+tracking = ["mlflow>=3.5,<4", "boto3>=1.36,<2"]
+ml = ["torch>=2.6,<3", "mlflow>=3.5,<4", "boto3>=1.36,<2", "scikit-learn>=1.6,<2"]
+pipeline = ["dvc[s3]>=3.60,<4"]
+ui = ["streamlit>=1.42,<2", "requests>=2.32,<3"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trajectory_mlops"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["ml: tests nécessitant PyTorch et MLflow", "e2e: tests sur une API déjà démarrée"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".cache", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

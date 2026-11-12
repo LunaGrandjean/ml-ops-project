@@ -1,0 +1,39 @@
+name: Retrain candidate
+on:
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  train:
+    environment: training
+    runs-on: [self-hosted, linux, mlops]
+    env:
+      MLFLOW_TRACKING_URI: ${{ vars.MLFLOW_TRAINING_URI }}
+      MLFLOW_EXPERIMENT_NAME: trajectory-classification
+      AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ROOT_USER }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_ROOT_PASSWORD }}
+      AWS_DEFAULT_REGION: us-east-1
+      DATA_S3_ENDPOINT: ${{ vars.DATA_S3_ENDPOINT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: "0.12.23"}
+      - run: uv sync --frozen --extra ml --extra pipeline
+      - name: Pull versioned dataset and train
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .dvc/config
+          test -f data/raw.dvc
+          test -n "$MLFLOW_TRACKING_URI"
+          uv run python -m dvc remote modify --local storage endpointurl "$DATA_S3_ENDPOINT"
+          uv run python -m dvc pull data/raw.dvc
+          uv run python -m dvc repro --force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-report
+          path: |
+            reports/evaluation.json
+            artifacts/run.json
+            artifacts/registry.json
+            dvc.lock
+      # Promotion explicite après revue ; ne change pas le modèle en production.
