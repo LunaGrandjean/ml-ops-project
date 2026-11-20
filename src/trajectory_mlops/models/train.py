@@ -37,6 +37,13 @@ def predictions(model, loader):
     return labels, predicted
 
 
+def class_weights(dataset: TrajectoryDataset) -> torch.Tensor:
+    """Weight each class by 1 / its frequency, so a rare class (Reckless) counts as much as Safe."""
+    labels = torch.tensor([CLASSES.index(row["label"]) for row in dataset.records])
+    counts = torch.bincount(labels, minlength=len(CLASSES)).float()
+    return counts.sum() / (len(CLASSES) * counts)
+
+
 def train():
     params, settings = read_params(), Settings()
     cfg, data = params["training"], params["data"]
@@ -54,7 +61,8 @@ def train():
     val_loader = DataLoader(val_set, batch_size=cfg["batch_size"])
     model = TrajectoryCNN(data["image_size"])
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["learning_rate"])
-    loss_fn = nn.CrossEntropyLoss()
+    weights = class_weights(train_set) if cfg.get("class_weights", False) else None
+    loss_fn = nn.CrossEntropyLoss(weight=weights)
     best_f1, best_state = -1.0, None
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     mlflow.set_experiment(settings.mlflow_experiment_name)
