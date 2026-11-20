@@ -32,7 +32,7 @@ def test_deterministic_disjoint_stratified_split(dataset_params):
 
 def test_duplicate_refused(dataset_params):
     shutil.copyfile("data/raw/Safe/0.png", "data/raw/Tandem/copy.png")
-    with pytest.raises(ValueError, match="dupliquée"):
+    with pytest.raises(ValueError, match="Duplicate"):
         prepare(dataset_params)
 
 
@@ -40,3 +40,16 @@ def test_missing_class_refused(dataset_params):
     shutil.rmtree(Path("data/raw/Reckless"))
     with pytest.raises(ValueError, match="Reckless"):
         prepare(dataset_params)
+
+
+def test_windows_of_one_ride_stay_in_one_split(dataset_params):
+    # Rename the 12 test images per class into 4 rides of 3 windows each.
+    for label in CLASSES:
+        folder = Path("data/raw") / label
+        for path in folder.glob("*.png"):
+            number = int(path.stem)
+            path.rename(folder / f"{label}-ride{number // 3}_w{number % 3:02d}.png")
+    manifest = prepare(dataset_params)
+    split_of_ride = {}
+    for row in manifest["images"]:
+        assert split_of_ride.setdefault(row["ride_id"], row["split"]) == row["split"]

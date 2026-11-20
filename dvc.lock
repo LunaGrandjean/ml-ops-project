@@ -57,3 +57,33 @@ stages:
       md5: f321420d94f0cab4eec431f407f02627.dir
       size: 9489543
       nfiles: 4849
+  prepare:
+    cmd: python -m trajectory_mlops.data.prepare
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: f321420d94f0cab4eec431f407f02627.dir
+      size: 9489543
+      nfiles: 4849
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/data/prepare.py
+      hash: md5
+      md5: ce121f8b3dd82281a6960aa8bfb960b8
+      size: 3649
+    params:
+      params.yaml:
+        data:
+          raw_dir: data/raw
+          manifest: data/processed/manifest.json
+          image_size: 128
+          seed: 42
+          train_fraction: 0.7
+          validation_fraction: 0.15
+    outs:
+    - path: data/processed/manifest.json
+      hash: md5
+      md5: 660be709ef7e8d9bdae8452254b9bbdd
+      size: 1623262
