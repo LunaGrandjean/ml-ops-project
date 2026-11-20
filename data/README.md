@@ -26,6 +26,23 @@ actuel par image ne protège pas de cette fuite. Conserver le jeu de test final
 hors des choix d'hyperparamètres et des expérimentations répétées.
 
 Git ignore les images. DVC peut les versionner via un stockage partagé autorisé.
+
+## Données sources versionnées avec DVC
+
+Les fichiers Inside d'origine (`GBG500.parquet`, `GBG500_labels.csv`, `data.txt`)
+sont dans `data/source/`, suivis par DVC (`data/source.dvc`, ~29 Mo). Git ne stocke
+que l'empreinte ; les fichiers sont dans le remote `storage` = `s3://datasets/dvc`
+sur MinIO (`http://localhost:9000`). `SRV3490.parquet` n'est pas suivi (non requis).
+
+```bash
+export AWS_ACCESS_KEY_ID=<MINIO_ROOT_USER> AWS_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD>
+uv run dvc pull      # récupérer les données
+uv run dvc add data/source && uv run dvc push   # après modification des données
+```
+
+MinIO tourne en local : chacun doit d'abord pousser les données sur son propre
+MinIO (copier les fichiers Inside dans `data/source/` puis `uv run dvc push`).
+`data/raw/` reste réservé aux images générées à partir de `data/source/`.
 Ne jamais utiliser un chemin `C:/Users/...` comme remote pour tout le groupe.
 Ne pas publier les données Inside sur GitHub sans autorisation.
 
