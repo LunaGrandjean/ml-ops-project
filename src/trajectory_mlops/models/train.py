@@ -53,7 +53,13 @@ def train():
     torch.use_deterministic_algorithms(True)
     torch.set_num_threads(1)
     generator = torch.Generator().manual_seed(cfg["seed"])
-    train_set = TrajectoryDataset(data["manifest"], "train", data["image_size"])
+    train_set = TrajectoryDataset(
+        data["manifest"],
+        "train",
+        data["image_size"],
+        max_shift=cfg.get("augment_max_shift", 0.0),
+        noise_std=cfg.get("augment_noise_std", 0.0),
+    )
     val_set = TrajectoryDataset(data["manifest"], "validation", data["image_size"])
     train_loader = DataLoader(
         train_set, batch_size=cfg["batch_size"], shuffle=True, generator=generator
