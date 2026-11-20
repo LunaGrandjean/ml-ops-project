@@ -96,8 +96,8 @@ stages:
       size: 1623262
     - path: pyproject.toml
       hash: md5
-      md5: 729fae93029f18bbdb40d8d76061cd80
-      size: 1365
+      md5: 7fe6937d3458fd71d3fdbf101ddd1673
+      size: 1410
     - path: src/trajectory_mlops/config.py
       hash: md5
       md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
@@ -108,13 +108,13 @@ stages:
       size: 396
     - path: src/trajectory_mlops/models
       hash: md5
-      md5: d36e249d797d6c8dd7bd1d9aae676f79.dir
-      size: 22832
-      nfiles: 9
+      md5: a5b9d2a95192e311a1336c8f379d93ab.dir
+      size: 34701
+      nfiles: 12
     - path: uv.lock
       hash: md5
-      md5: 091773f10b3f1d7e6a78c531c70e5a23
-      size: 655778
+      md5: d02a75de256cbacadcf3e55431bffb27
+      size: 655886
     params:
       params.yaml:
         data.image_size: 128
@@ -123,25 +123,26 @@ stages:
           batch_size: 32
           learning_rate: 0.001
           seed: 42
+          class_weights: true
     outs:
     - path: artifacts/model.pt
       hash: md5
-      md5: 2e5f3f387a336979a14117e0a6712ba1
+      md5: 094eda750de6cb357f8147a787aec9ae
       size: 112545
     - path: artifacts/run.json
       hash: md5
-      md5: e202a973f47a74222806d62c53fa8c69
+      md5: c09133e42e872f3dd0b2c75f9a848b12
       size: 217
   evaluate:
     cmd: python -m trajectory_mlops.models.evaluate
     deps:
     - path: artifacts/model.pt
       hash: md5
-      md5: 2e5f3f387a336979a14117e0a6712ba1
+      md5: 094eda750de6cb357f8147a787aec9ae
       size: 112545
     - path: artifacts/run.json
       hash: md5
-      md5: e202a973f47a74222806d62c53fa8c69
+      md5: c09133e42e872f3dd0b2c75f9a848b12
       size: 217
     - path: data/processed/manifest.json
       hash: md5
@@ -153,9 +154,9 @@ stages:
       size: 706
     - path: src/trajectory_mlops/models
       hash: md5
-      md5: a18e94e6033e02b914e1163b663dd862.dir
-      size: 27638
-      nfiles: 10
+      md5: a5b9d2a95192e311a1336c8f379d93ab.dir
+      size: 34701
+      nfiles: 12
     params:
       params.yaml:
         data.image_size: 128
@@ -164,9 +165,13 @@ stages:
     outs:
     - path: artifacts/registry.json
       hash: md5
-      md5: 82712f48ae92795b4f60cb2dd89f7a0a
+      md5: f5672cba49aace2dbe4b4f9d9d1964d6
       size: 103
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 7d88e089edb446111df397dc6b9f3364
+      size: 50550
     - path: reports/evaluation.json
       hash: md5
-      md5: ccb9bc5d500fd06bb088f6dbb1ffe359
-      size: 1764
+      md5: 666a162d70c53d27b20a6952ecadf183
+      size: 1814
