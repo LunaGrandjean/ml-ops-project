@@ -46,7 +46,7 @@ stages:
     params:
       - data.image_size
       - evaluation
-        metrics:
+    metrics:
       - reports/evaluation.json:
           cache: false
     plots:
