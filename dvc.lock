@@ -108,8 +108,8 @@ stages:
       size: 396
     - path: src/trajectory_mlops/models
       hash: md5
-      md5: a5b9d2a95192e311a1336c8f379d93ab.dir
-      size: 34701
+      md5: dfd8ad833ef9e7d5a26df673eac62d92.dir
+      size: 37487
       nfiles: 12
     - path: uv.lock
       hash: md5
@@ -124,25 +124,27 @@ stages:
           learning_rate: 0.001
           seed: 42
           class_weights: true
+          augment_max_shift: 0.1
+          augment_noise_std: 0.02
     outs:
     - path: artifacts/model.pt
       hash: md5
-      md5: 094eda750de6cb357f8147a787aec9ae
-      size: 112545
+      md5: 95b75303ed46da5f97cd9b20a29d2d14
+      size: 112609
     - path: artifacts/run.json
       hash: md5
-      md5: c09133e42e872f3dd0b2c75f9a848b12
+      md5: 4d887f24c26df6dd0dae4ed7707edb0d
       size: 217
   evaluate:
     cmd: python -m trajectory_mlops.models.evaluate
     deps:
     - path: artifacts/model.pt
       hash: md5
-      md5: 094eda750de6cb357f8147a787aec9ae
-      size: 112545
+      md5: 95b75303ed46da5f97cd9b20a29d2d14
+      size: 112609
     - path: artifacts/run.json
       hash: md5
-      md5: c09133e42e872f3dd0b2c75f9a848b12
+      md5: 4d887f24c26df6dd0dae4ed7707edb0d
       size: 217
     - path: data/processed/manifest.json
       hash: md5
@@ -154,8 +156,8 @@ stages:
       size: 706
     - path: src/trajectory_mlops/models
       hash: md5
-      md5: a5b9d2a95192e311a1336c8f379d93ab.dir
-      size: 34701
+      md5: dfd8ad833ef9e7d5a26df673eac62d92.dir
+      size: 37487
       nfiles: 12
     params:
       params.yaml:
@@ -165,13 +167,13 @@ stages:
     outs:
     - path: artifacts/registry.json
       hash: md5
-      md5: f5672cba49aace2dbe4b4f9d9d1964d6
+      md5: af6229a2d5596b202d2c5a9d2a8cdc82
       size: 103
     - path: reports/confusion_matrix.png
       hash: md5
-      md5: 7d88e089edb446111df397dc6b9f3364
-      size: 50550
+      md5: abb188f8baf89f86cd3db70a255a9679
+      size: 49717
     - path: reports/evaluation.json
       hash: md5
-      md5: 666a162d70c53d27b20a6952ecadf183
-      size: 1814
+      md5: 621081ca22538e9860240ba2d1289670
+      size: 1783
