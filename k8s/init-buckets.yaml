@@ -8,7 +8,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init
-          image: minio/mc:latest
+          image: pgsty/mc:RELEASE.2026-11-12T00-00-00Z
           envFrom:
             - secretRef: {name: storage-credentials}
           command: ["/bin/sh", "-c"]
