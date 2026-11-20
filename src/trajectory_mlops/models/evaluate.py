@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 
 from trajectory_mlops.config import CLASSES, Settings, read_params
 from trajectory_mlops.models.dataset import TrajectoryDataset
+from trajectory_mlops.models.plots import save_confusion_matrix
 from trajectory_mlops.models.train import predictions
 
 
@@ -50,10 +51,12 @@ def evaluate():
     }
     Path("reports").mkdir(exist_ok=True)
     Path("reports/evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    save_confusion_matrix(report, "reports/confusion_matrix.png")
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     with mlflow.start_run(run_id=metadata["run_id"]):
         mlflow.log_metrics(metrics)
         mlflow.log_artifact("reports/evaluation.json", "evaluation")
+        mlflow.log_artifact("reports/confusion_matrix.png", "evaluation")
     version = mlflow.register_model(metadata["model_uri"], settings.model_name)
     MlflowClient().set_registered_model_alias(settings.model_name, "candidate", version.version)
     Path("artifacts/registry.json").write_text(

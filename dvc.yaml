@@ -46,9 +46,11 @@ stages:
     params:
       - data.image_size
       - evaluation
-    metrics:
+        metrics:
       - reports/evaluation.json:
+          cache: false
+    plots:
+      - reports/confusion_matrix.png:
           cache: false
     outs:
       - artifacts/registry.json
-

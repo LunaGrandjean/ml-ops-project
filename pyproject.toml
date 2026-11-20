@@ -20,7 +20,13 @@ dependencies = [
 
 [project.optional-dependencies]
 tracking = ["mlflow>=3.5,<4", "boto3>=1.36,<2"]
-ml = ["torch>=2.6,<3", "mlflow>=3.5,<4", "boto3>=1.36,<2", "scikit-learn>=1.6,<2"]
+ml = [
+    "torch>=2.6,<3",
+    "mlflow>=3.5,<4",
+    "boto3>=1.36,<2",
+    "scikit-learn>=1.6,<2",
+    "matplotlib>=3.9,<4",
+]
 pipeline = [
     "dvc[s3]>=3.60,<4",
     "pandas>=2.2,<3",

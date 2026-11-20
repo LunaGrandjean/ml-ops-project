@@ -3459,6 +3459,7 @@ dev = [
 ]
 ml = [
     { name = "boto3" },
+    { name = "matplotlib" },
     { name = "mlflow" },
     { name = "scikit-learn" },
     { name = "torch", version = "2.15.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
@@ -3485,6 +3486,7 @@ requires-dist = [
     { name = "dvc", extras = ["s3"], marker = "extra == 'pipeline'", specifier = ">=3.60,<4" },
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28,<1" },
+    { name = "matplotlib", marker = "extra == 'ml'", specifier = ">=3.9,<4" },
     { name = "mlflow", marker = "extra == 'ml'", specifier = ">=3.5,<4" },
     { name = "mlflow", marker = "extra == 'tracking'", specifier = ">=3.5,<4" },
     { name = "numpy", specifier = ">=2,<3" },
