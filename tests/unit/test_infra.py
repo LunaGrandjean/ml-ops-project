@@ -42,7 +42,7 @@ def test_kubernetes_renderer_and_resources(monkeypatch):
 
 def test_dag_has_expected_stages_and_real_dependencies():
     dag = yaml.safe_load((ROOT / "dvc.yaml").read_text(encoding="utf-8"))
-    assert list(dag["stages"]) == ["prepare", "train", "evaluate"]
+    assert list(dag["stages"]) == ["convert", "prepare", "train", "evaluate"]
     for stage in dag["stages"].values():
         for dep in stage["deps"]:
             if dep.startswith("src/") or dep in {"pyproject.toml", "uv.lock"}:
