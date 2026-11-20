@@ -1,0 +1,59 @@
+schema: '2.0'
+stages:
+  convert:
+    cmd: python -m trajectory_mlops.data.convert
+    deps:
+    - path: data/source
+      hash: md5
+      md5: 3dcf214a691b6aef5661f099c28fa843.dir
+      size: 30243100
+      nfiles: 3
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/data/convert.py
+      hash: md5
+      md5: 227fa2d773e3266044e92af28a98b59f
+      size: 3777
+    params:
+      params.yaml:
+        convert:
+          parquet: data/source/GBG500.parquet
+          labels: data/source/GBG500_labels.csv
+          window_seconds: 30
+          sample_ms: 100
+          band_height: 20
+          signals:
+          - ax
+          - ay
+          - az
+          - rx
+          - ry
+          - rz
+          ranges:
+            ax:
+            - -3
+            - 3
+            ay:
+            - -12
+            - -4
+            az:
+            - -5
+            - 1
+            rx:
+            - -30
+            - 30
+            ry:
+            - -80
+            - 80
+            rz:
+            - -30
+            - 30
+        data.raw_dir: data/raw
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: f321420d94f0cab4eec431f407f02627.dir
+      size: 9489543
+      nfiles: 4849

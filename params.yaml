@@ -1,3 +1,19 @@
+convert:
+  parquet: data/source/GBG500.parquet
+  labels: data/source/GBG500_labels.csv
+  window_seconds: 30
+  sample_ms: 100
+  band_height: 20
+  signals: [ax, ay, az, rx, ry, rz]
+  # Fixed value range per signal (about the 0.5%-99.5% percentiles of GBG500).
+  # Same scale for every image; values outside are clipped.
+  ranges:
+    ax: [-3, 3]
+    ay: [-12, -4]
+    az: [-5, 1]
+    rx: [-30, 30]
+    ry: [-80, 80]
+    rz: [-30, 30]
 data:
   raw_dir: data/raw
   manifest: data/processed/manifest.json
