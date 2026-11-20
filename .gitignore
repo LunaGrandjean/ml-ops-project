@@ -35,3 +35,4 @@ Thumbs.db
 pytest-cache-files-*/
 
 /ml-ops-project/
+.vscode/
