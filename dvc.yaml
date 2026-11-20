@@ -1,4 +1,15 @@
 stages:
+  convert:
+    cmd: python -m trajectory_mlops.data.convert
+    deps:
+      - data/source
+      - src/trajectory_mlops/data/convert.py
+      - src/trajectory_mlops/config.py
+    params:
+      - convert
+      - data.raw_dir
+    outs:
+      - data/raw
   prepare:
     cmd: python -m trajectory_mlops.data.prepare
     deps:
@@ -38,6 +49,8 @@ stages:
     metrics:
       - reports/evaluation.json:
           cache: false
+    plots:
+      - reports/confusion_matrix.png:
+          cache: false
     outs:
       - artifacts/registry.json
-

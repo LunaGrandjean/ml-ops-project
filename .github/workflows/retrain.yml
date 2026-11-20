@@ -23,10 +23,10 @@ jobs:
         run: |
           set -euo pipefail
           test -f .dvc/config
-          test -f data/raw.dvc
+          test -f data/source.dvc
           test -n "$MLFLOW_TRACKING_URI"
           uv run python -m dvc remote modify --local storage endpointurl "$DATA_S3_ENDPOINT"
-          uv run python -m dvc pull data/raw.dvc
+          uv run python -m dvc pull data/source.dvc
           uv run python -m dvc repro --force
       - uses: actions/upload-artifact@v4
         with:

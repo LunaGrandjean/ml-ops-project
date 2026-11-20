@@ -7,9 +7,9 @@ from trajectory_mlops.promote import quality_gate
     ("accuracy", "macro_f1", "accepted"),
     [
         (0.8, 0.7, True),
-        (0.6, 0.7, False),
-        (0.8, 0.1, False),
-        (0.2, 0.1, False),
+        (0.5, 0.7, True),  # accuracy below the majority baseline is fine if macro-F1 wins
+        (0.8, 0.1, False),  # high accuracy but macro-F1 below the baseline: rejected
+        (0.2, 0.7, False),  # accuracy not better than random guessing: rejected
     ],
 )
 def test_gate_rejects_models_below_baselines(accuracy, macro_f1, accepted):

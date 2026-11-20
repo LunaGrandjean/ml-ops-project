@@ -1,0 +1,179 @@
+schema: '2.0'
+stages:
+  convert:
+    cmd: python -m trajectory_mlops.data.convert
+    deps:
+    - path: data/source
+      hash: md5
+      md5: 3dcf214a691b6aef5661f099c28fa843.dir
+      size: 30243100
+      nfiles: 3
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/data/convert.py
+      hash: md5
+      md5: 227fa2d773e3266044e92af28a98b59f
+      size: 3777
+    params:
+      params.yaml:
+        convert:
+          parquet: data/source/GBG500.parquet
+          labels: data/source/GBG500_labels.csv
+          window_seconds: 30
+          sample_ms: 100
+          band_height: 20
+          signals:
+          - ax
+          - ay
+          - az
+          - rx
+          - ry
+          - rz
+          ranges:
+            ax:
+            - -3
+            - 3
+            ay:
+            - -12
+            - -4
+            az:
+            - -5
+            - 1
+            rx:
+            - -30
+            - 30
+            ry:
+            - -80
+            - 80
+            rz:
+            - -30
+            - 30
+        data.raw_dir: data/raw
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: f321420d94f0cab4eec431f407f02627.dir
+      size: 9489543
+      nfiles: 4849
+  prepare:
+    cmd: python -m trajectory_mlops.data.prepare
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: f321420d94f0cab4eec431f407f02627.dir
+      size: 9489543
+      nfiles: 4849
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/data/prepare.py
+      hash: md5
+      md5: ce121f8b3dd82281a6960aa8bfb960b8
+      size: 3649
+    params:
+      params.yaml:
+        data:
+          raw_dir: data/raw
+          manifest: data/processed/manifest.json
+          image_size: 128
+          seed: 42
+          train_fraction: 0.7
+          validation_fraction: 0.15
+    outs:
+    - path: data/processed/manifest.json
+      hash: md5
+      md5: 660be709ef7e8d9bdae8452254b9bbdd
+      size: 1623262
+  train:
+    cmd: python -m trajectory_mlops.models.train
+    deps:
+    - path: data/processed/manifest.json
+      hash: md5
+      md5: 660be709ef7e8d9bdae8452254b9bbdd
+      size: 1623262
+    - path: pyproject.toml
+      hash: md5
+      md5: 7fe6937d3458fd71d3fdbf101ddd1673
+      size: 1410
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/data/images.py
+      hash: md5
+      md5: c9a28e8eb32551c272182a3ce89ba181
+      size: 396
+    - path: src/trajectory_mlops/models
+      hash: md5
+      md5: dfd8ad833ef9e7d5a26df673eac62d92.dir
+      size: 37487
+      nfiles: 12
+    - path: uv.lock
+      hash: md5
+      md5: d02a75de256cbacadcf3e55431bffb27
+      size: 655886
+    params:
+      params.yaml:
+        data.image_size: 128
+        training:
+          epochs: 10
+          batch_size: 32
+          learning_rate: 0.001
+          seed: 42
+          class_weights: true
+          augment_max_shift: 0.1
+          augment_noise_std: 0.02
+    outs:
+    - path: artifacts/model.pt
+      hash: md5
+      md5: 95b75303ed46da5f97cd9b20a29d2d14
+      size: 112609
+    - path: artifacts/run.json
+      hash: md5
+      md5: 4d887f24c26df6dd0dae4ed7707edb0d
+      size: 217
+  evaluate:
+    cmd: python -m trajectory_mlops.models.evaluate
+    deps:
+    - path: artifacts/model.pt
+      hash: md5
+      md5: 95b75303ed46da5f97cd9b20a29d2d14
+      size: 112609
+    - path: artifacts/run.json
+      hash: md5
+      md5: 4d887f24c26df6dd0dae4ed7707edb0d
+      size: 217
+    - path: data/processed/manifest.json
+      hash: md5
+      md5: 660be709ef7e8d9bdae8452254b9bbdd
+      size: 1623262
+    - path: src/trajectory_mlops/config.py
+      hash: md5
+      md5: 88bcd6a5b0d4df873a56d6aa4b1f5b7a
+      size: 706
+    - path: src/trajectory_mlops/models
+      hash: md5
+      md5: dfd8ad833ef9e7d5a26df673eac62d92.dir
+      size: 37487
+      nfiles: 12
+    params:
+      params.yaml:
+        data.image_size: 128
+        evaluation:
+          min_accuracy: 0.21
+    outs:
+    - path: artifacts/registry.json
+      hash: md5
+      md5: af6229a2d5596b202d2c5a9d2a8cdc82
+      size: 103
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: abb188f8baf89f86cd3db70a255a9679
+      size: 49717
+    - path: reports/evaluation.json
+      hash: md5
+      md5: 621081ca22538e9860240ba2d1289670
+      size: 1783
