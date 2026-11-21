@@ -32,20 +32,14 @@ kubectl -n trajectory-mlops port-forward service/mlflow 5001:5000
 ```
 
 4. **Bootstrap modèle** : le registre du cluster est initialement vide. L'API ne sera
-   pas ready et c'est attendu. Garder le
-   port-forward MLflow dans un terminal, puis entraîner localement contre le cluster :
+   pas ready et c'est attendu. Garder le port-forward MLflow dans un terminal,
+   puis suivre [Person 2 model handoff](#person-2-model-handoff). Après promotion,
+   redémarrer l'API pour qu'elle résolve l'alias :
 
 ```powershell
-$env:MLFLOW_TRACKING_URI = "http://localhost:5001"
-uv run python -m dvc repro --force
-# Lire artifacts/registry.json puis remplacer 1 par la bonne version.
-uv run python -m trajectory_mlops.promote --version 1
 kubectl -n trajectory-mlops rollout restart deployment/api
 kubectl -n trajectory-mlops rollout status deployment/api --timeout=300s
 ```
-
-Les données doivent être disponibles dans votre checkout. Le serveur MLflow du cluster
-envoie les poids à son propre MinIO ; aucune clé S3 n'est nécessaire dans l'API.
 
 5. Ouvrir dans deux autres terminaux :
 
@@ -56,6 +50,32 @@ kubectl -n trajectory-mlops port-forward service/ui 8501:8501
 
 Tester Swagger, la prédiction par l'UI et `scripts/smoke_api.py`. Garder des captures
 du cluster, du bucket, du run et de la version du modèle servi.
+
+## Person 2 model handoff
+
+Download [person2-model-handoff.zip](handoff/person2-model-handoff.zip) for the MLflow model, training
+configuration, source run ID, dataset fingerprint and test evaluation.
+Extract it on a machine that can reach the target MLflow server. With the
+cluster MLflow port-forward active, register the bundle:
+
+```bash
+uv sync --frozen --extra tracking
+uv run python scripts/register_model_bundle.py /path/to/person2-model-handoff --tracking-uri http://localhost:5001
+```
+
+The script prints the version assigned by the target registry. If it already
+has a production model, compare the runs on the same test split and confirm
+the model choice before moving the alias. Replace `TARGET_VERSION` with the
+version printed above:
+
+```bash
+MLFLOW_TRACKING_URI=http://localhost:5001 uv run python -m trajectory_mlops.promote --version TARGET_VERSION
+```
+
+The API uses `MODEL_URI=models:/trajectory-classifier@production`. Restart it
+after promotion and check readiness, the returned `model_version`, and a
+prediction from a real GBG500 window. The MLflow server stores the model in the
+cluster's MinIO bucket through its artifact store.
 
 ## Configuration GitHub
 
