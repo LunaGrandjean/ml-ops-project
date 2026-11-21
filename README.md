@@ -101,10 +101,10 @@ Lire la version dans `artifacts/registry.json`, puis remplacer `1` ci-dessous :
 uv run python -m trajectory_mlops.promote --version 1
 ```
 
-Le contrôle exige une accuracy supérieure au hasard uniforme (20 %) et au
-classifieur majoritaire, au moins le seuil configuré, et une macro-F1 supérieure
-à la baseline majoritaire. Si le contrôle échoue, améliorer le modèle sur validation
-avant de préparer l'évaluation finale ; ne pas diminuer les seuils pour masquer l'échec.
+The promotion gate requires test accuracy above uniform random guessing (20%),
+test accuracy of at least the configured threshold (21%), and test macro-F1 above
+the majority-class baseline. Before promoting a candidate, compare it with the
+current `@production` model on the same test split.
 
 Dans `.env`, renseigner :
 
@@ -119,9 +119,76 @@ docker compose up -d --force-recreate api ui
 uv run python scripts/smoke_api.py --image "data/raw/Safe/exemple.png"
 ```
 
-Le CNN est une baseline compacte, sans téléchargement de poids. Le responsable
-modèle pourra le remplacer par du transfert d'apprentissage après avoir confirmé
-le dataset et établi les baselines. L'accuracy réelle reste à mesurer.
+## Model architecture and evaluation
+
+Each example is a 30-second window of accelerometer and gyroscope signals
+encoded as an image with six horizontal bands. The compact PyTorch CNN uses
+three convolutional blocks to detect local patterns such as sudden signal
+changes. Pooling reduces sensitivity to where a pattern occurs in the window,
+and a linear layer predicts one of the five classes. This architecture can be
+trained from scratch on CPU and exported as TorchScript.
+
+The split groups windows by ride to prevent leakage. Training uses inverse-frequency
+class weights to give rare classes more influence and applies random time shifts
+and small amounts of noise to training images. Checkpoints are selected by
+validation macro-F1, which gives equal weight to each class.
+
+### Reported experiments
+
+| Experiment | Configuration | Test accuracy | Test macro-F1 | Reckless recall |
+| --- | --- | ---: | ---: | ---: |
+| 1 | CNN, 10 epochs | 0.845 | 0.268 | 4/15 (27%) |
+| 2 | CNN with class weights | 0.674 | 0.319 | 11/15 (73%) |
+| 3 | Class weights and augmentation | 0.692 | 0.343 | 12/15 (80%) |
+
+The majority classifier reached 0.842 test accuracy. Experiment 3 had the highest
+reported macro-F1. Bad Weather and Tandem still had zero recall. The
+[EDA](docs/EDA.md) shows that these classes have few rides and motion profiles
+similar to Safe. Reckless recall is measured on windows from a single test ride,
+which limits what the result says about performance on unseen Reckless rides.
+
+[Experiment 1 confusion matrix](docs/screenshots/confusion_matrix_experiment1.png) ·
+[Experiment 2 confusion matrix](docs/screenshots/confusion_matrix_experiment2.png) ·
+[Experiment 3 confusion matrix](docs/screenshots/confusion_matrix_experiment3.png)
+
+### Champion comparison and tuning
+
+The saved confusion matrices for experiments 2 and 3 contain the same class
+supports across 736 test windows. They show the following comparison.
+
+| Test class | Support | v2 recall | v3 recall |
+| --- | ---: | ---: | ---: |
+| Safe | 620 | 462/620 (74.5%) | 473/620 (76.3%) |
+| Safe Overall | 48 | 23/48 (47.9%) | 24/48 (50.0%) |
+| Bad Weather | 24 | 0/24 (0%) | 0/24 (0%) |
+| Tandem | 29 | 0/29 (0%) | 0/29 (0%) |
+| Reckless | 15 | 11/15 (73.3%) | 12/15 (80.0%) |
+
+On these saved results, v3 improved macro-F1 by 0.024 and made 13 more correct
+predictions. Its reported accuracy and macro-F1 exceed the promotion thresholds
+(0.210 accuracy and approximately 0.183 majority-class macro-F1).
+
+The last team report recorded v2 as `@production` and v3 as `@candidate`.
+The source directory and regenerated manifest matched the DVC hashes in
+`dvc.lock`. Tuning kept the data split, seed, class weights and augmentation
+fixed and varied the epoch budget and Adam learning rate.
+
+| Epoch budget | Learning rate | Best epoch | Validation macro-F1 | Local MLflow run |
+| ---: | ---: | ---: | ---: | --- |
+| 10 | 0.001 | 10 | 0.3515 | First 10 epochs of the 0.001 run |
+| 20 | 0.001 | 18 | 0.3663 | `fd03289cbff7485db28760c2bd4dff09` |
+| 20 | 0.0005 | 18 | 0.3678 | `162082769cfd448e8c6d1ea6080e83ed` |
+
+The checkpoint selected on validation (0.0005, epoch 18) achieved **0.3597 test
+macro-F1** and **0.7514 accuracy** on 736 windows. Its recall was 84.2% for
+Safe (522/620), 41.7% for Safe Overall (20/48), 0% for Bad Weather (0/24),
+0% for Tandem (0/29), and 73.3% for Reckless (11/15). Compared with v3,
+the tuned model improved macro-F1 by about 0.017, while recall declined for
+Safe Overall and Reckless. [Tuned model confusion matrix](docs/screenshots/confusion_matrix_tuned.png)
+
+The tuned model passed the quality gate and was promoted as v1 in the local
+MLflow registry. The deployment team can register the evaluated bundle in the Kubernetes MLflow
+registry without retraining. See [Person 2 model handoff](docs/DEPLOYMENT.md#person-2-model-handoff).
 
 ## Tests
 
@@ -149,7 +216,7 @@ uv run python -m pytest -m e2e
 - CD vers Kubernetes activée avec `ENABLE_K8S_DEPLOY=true`, un runner Linux
   auto-hébergé de confiance et l'environnement GitHub `production`.
 - Le registre MLflow du cluster est distinct du registre Compose. Un modèle doit
-  être entraîné/enregistré dans le registre cible avant de déployer l'API.
+  être enregistré dans le registre cible avant que l'API puisse le charger.
 - Procédure, secrets et première initialisation : [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - Règles de PR : [CONTRIBUTING.md](CONTRIBUTING.md).
 - Observabilité avancée et feature store : backlog bonus, non implémentés.
@@ -175,8 +242,7 @@ autres membres comme collaborateurs et activer une revue de PR sur `main`.
 | --- | --- |
 | Version du dataset / DVC | À renseigner |
 | Split et prévention des fuites | À confirmer avec les données Inside |
-| Baseline majoritaire accuracy / macro-F1 | À mesurer |
-| Meilleur run MLflow / version | À mesurer |
-| Modèle final accuracy / macro-F1 | À mesurer |
+| Model experiments and majority baseline | See [reported experiments](#reported-experiments) |
+| Final registry version and comparison | Tuned model v1 in local MLflow. Team registry pending. |
 | Trois URLs Docker Hub | À renseigner |
 | Captures Kubernetes / Swagger / UI / MLflow | À ajouter dans docs/screenshots/ |
