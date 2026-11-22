@@ -8,8 +8,11 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
+from prometheus_client import CONTENT_TYPE_LATEST
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import Response
 
+from trajectory_mlops.api.metrics import ApiMetrics, MetricsMiddleware
 from trajectory_mlops.api.predictor import Predictor
 from trajectory_mlops.api.schemas import Prediction
 from trajectory_mlops.config import CLASSES, Settings
@@ -19,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(settings: Settings | None = None, predictor=None) -> FastAPI:
     settings = settings or Settings()
+    metrics = ApiMetrics()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -28,7 +32,11 @@ def create_app(settings: Settings | None = None, predictor=None) -> FastAPI:
                 app.state.predictor = await run_in_threadpool(Predictor, settings)
             except Exception:
                 logger.exception("Model loading failed; readiness remains 503.")
-        yield
+        metrics.ready.set(int(app.state.predictor is not None))
+        try:
+            yield
+        finally:
+            metrics.ready.set(0)
 
     app = FastAPI(
         title="Trajectory Classifier",
@@ -40,6 +48,13 @@ def create_app(settings: Settings | None = None, predictor=None) -> FastAPI:
             "Confidence scores are softmax outputs and are not calibrated probabilities."
         ),
     )
+
+    app.state.metrics = metrics
+    app.add_middleware(MetricsMiddleware, metrics=metrics)
+
+    @app.get("/metrics", include_in_schema=False)
+    def prometheus_metrics():
+        return Response(content=metrics.render(), headers={"Content-Type": CONTENT_TYPE_LATEST})
 
     @app.get("/health/live", tags=["health"], summary="Check that the process is alive")
     def live():
@@ -107,7 +122,9 @@ def create_app(settings: Settings | None = None, predictor=None) -> FastAPI:
             raise HTTPException(422, "Invalid image or excessive image dimensions.") from exc
         try:
             result = await run_in_threadpool(engine.predict, rgb)
-            return Prediction.model_validate(result)
+            validated = Prediction.model_validate(result)
+            metrics.prediction(validated.label, validated.confidence)
+            return validated
         except Exception as exc:
             logger.exception("Model inference failed.")
             raise HTTPException(500, "Prediction failed. Check the API service logs.") from exc
