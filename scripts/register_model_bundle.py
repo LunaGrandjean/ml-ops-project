@@ -22,6 +22,7 @@ def register(bundle: Path, tracking_uri: str) -> str:
 
     settings = Settings()
     mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_registry_uri(tracking_uri)
     mlflow.set_experiment(settings.mlflow_experiment_name)
     with mlflow.start_run(run_name="GBG500 tuned model handoff") as run:
         mlflow.set_tags(
@@ -32,8 +33,15 @@ def register(bundle: Path, tracking_uri: str) -> str:
         for name in ("params.yaml", "run.json", "evaluation.json", "confusion_matrix.png"):
             mlflow.log_artifact(str(bundle / name), "handoff")
         mlflow.log_artifacts(str(bundle / "model"), "model")
+        # The handoff refers to a logged-model ID in the author's registry.
+        # Preserve source provenance in tags, but rebind the imported MLmodel.
+        model_spec = yaml.safe_load((bundle / "model/MLmodel").read_text(encoding="utf-8"))
+        model_spec.pop("model_id", None)
+        model_spec["run_id"] = run.info.run_id
+        model_spec["artifact_path"] = "model"
+        mlflow.log_text(yaml.safe_dump(model_spec), "model/MLmodel")
         version = mlflow.register_model(f"runs:/{run.info.run_id}/model", settings.model_name)
-    return version.version
+    return str(version.version)
 
 
 if __name__ == "__main__":

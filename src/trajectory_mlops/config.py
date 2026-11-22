@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import yaml
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CLASSES = ("Safe", "Safe Overall", "Bad Weather", "Tandem", "Reckless")
@@ -15,7 +16,8 @@ class Settings(BaseSettings):
     model_name: str = "trajectory-classifier"
     mlflow_tracking_uri: str = "http://localhost:5001"
     mlflow_experiment_name: str = "trajectory-classification"
-    max_upload_bytes: int = 5 * 1024 * 1024
+    max_upload_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
+    max_image_pixels: int = Field(default=4_000_000, gt=0)
 
 
 def read_params(path: str = "params.yaml") -> dict:

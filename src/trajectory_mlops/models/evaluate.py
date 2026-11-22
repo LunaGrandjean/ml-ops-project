@@ -53,6 +53,7 @@ def evaluate():
     Path("reports/evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     save_confusion_matrix(report, "reports/confusion_matrix.png")
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
+    mlflow.set_registry_uri(settings.mlflow_tracking_uri)
     with mlflow.start_run(run_id=metadata["run_id"]):
         mlflow.log_metrics(metrics)
         mlflow.log_artifact("reports/evaluation.json", "evaluation")
