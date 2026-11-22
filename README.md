@@ -103,8 +103,12 @@ uv run python -m trajectory_mlops.promote --version 1
 
 The promotion gate requires test accuracy above uniform random guessing (20%),
 test accuracy of at least the configured threshold (21%), and test macro-F1 above
-the majority-class baseline. Before promoting a candidate, compare it with the
-current `@production` model on the same test split.
+the majority-class baseline. When `@production` exists, promotion also requires
+a matching dataset/split fingerprint and a strictly higher macro-F1. Use
+`--dry-run` to preview the decision, or `--output artifacts/promotion.json`
+to save it. A skipped promotion exits successfully with `promoted=false`;
+automation must check that flag before releasing. See the
+[promotion policy](docs/RETRAINING.md) for details.
 
 Dans `.env`, renseigner :
 
