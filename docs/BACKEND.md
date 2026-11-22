@@ -53,3 +53,16 @@ MLflow registry, loads them through application startup and performs HTTP infere
 It does not contact or modify the team's registry. The generated-image smoke
 checks serving and version consistency, not accuracy. The deployed API test also
 accepts E2E_API_URL and E2E_IMAGE_PATH to run against an authorized real window.
+
+## Streamlit interface
+
+The UI checks model readiness and shows its version before enabling classification.
+It checks image size/format locally, displays the selected window, and shows the
+predicted class, top score, a five-class chart and a score table. Results are
+cleared when the uploaded image changes or a new request fails. Timeouts, rejected
+uploads and unavailable models produce actionable messages. API_URL comes from
+configuration; no model is loaded inside Streamlit.
+
+The UI tests cover the empty and unavailable states, successful upload/classify
+results and invalid image handling using Streamlit AppTest. The HTTP client tests
+verify upload serialization, timeout/error messages and score validation.
