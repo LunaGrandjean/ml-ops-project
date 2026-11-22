@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 from PIL import Image
 
-from trajectory_mlops.api.main import Prediction
+from trajectory_mlops.api.schemas import Prediction
 
 
 def smoke(url: str, model_uri: str = "", image: Path | None = None) -> dict:

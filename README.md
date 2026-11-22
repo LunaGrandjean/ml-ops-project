@@ -203,8 +203,9 @@ uv run python -m pytest -m "not ml and not e2e"
 uv run python -m pytest -m ml
 ```
 
-Le test ML utilise un dataset synthétique minuscule et un backend MLflow temporaire :
-il vérifie les branchements, pas la qualité du modèle réel. Pour tester le service
+ML integration tests cover a tiny synthetic training pipeline and import/HTTP serving
+of the actual evaluated handoff model in an isolated SQLite registry. They do not
+change the team registry or claim new project accuracy results. Pour tester le service
 déployé avec une véritable image :
 
 ```powershell
@@ -217,13 +218,14 @@ uv run python -m pytest -m e2e
 
 - Dev : Docker Compose. Production pédagogique : cluster Kubernetes local.
 - Publication des trois images sur Docker Hub au tag Git `v*` ou lancement manuel.
-- CD vers Kubernetes activée avec `ENABLE_K8S_DEPLOY=true`, un runner Linux
-  auto-hébergé de confiance et l'environnement GitHub `production`.
+- CD vers Kubernetes activée avec `ENABLE_K8S_DEPLOY=true`, un runner Mac de confiance
+  (labels configurables via MLOPS_RUNNER_LABELS) et l'environnement GitHub `production`.
 - Le registre MLflow du cluster est distinct du registre Compose. Un modèle doit
   être enregistré dans le registre cible avant que l'API puisse le charger.
 - Procédure, secrets et première initialisation : [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - Règles de PR : [CONTRIBUTING.md](CONTRIBUTING.md).
-- Observabilité avancée et feature store : backlog bonus, non implémentés.
+- API metrics are implemented; Prometheus/Grafana infrastructure remains with Member 5.
+- Lightweight feature store remains an optional Member 1 bonus.
 
 ## Publication du dossier
 
@@ -250,3 +252,16 @@ autres membres comme collaborateurs et activer une revue de PR sur `main`.
 | Final registry version and comparison | Tuned model v1 in local MLflow. Team registry pending. |
 | Trois URLs Docker Hub | À renseigner |
 | Captures Kubernetes / Swagger / UI / MLflow | À ajouter dans docs/screenshots/ |
+
+## Backend and retraining
+
+- [API and Streamlit guide](docs/BACKEND.md): readiness, model metadata, upload
+  validation, five confidence scores, error handling and demo commands.
+- [Retraining and promotion](docs/RETRAINING.md): manual dry run, DVC retrieval,
+  artifact smoke check, comparable champion/challenger gate and automatic release
+  only for an improved candidate. Releases pin both code SHA and numbered model URI.
+- [API monitoring handoff](docs/API_MONITORING.md): Prometheus endpoint, metric
+  names, scrape configuration and Grafana query examples for Member 5.
+
+Code and isolated tests are provided. Running the release still requires the
+team's Docker Hub secrets, trusted runner, production MLflow/MinIO and Kubernetes.

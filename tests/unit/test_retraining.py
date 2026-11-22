@@ -9,6 +9,8 @@ from trajectory_mlops import retraining
 from trajectory_mlops.config import CLASSES
 from trajectory_mlops.promote import PromotionResult
 
+pytestmark = pytest.mark.ml
+
 
 @pytest.fixture
 def candidate(tmp_path, monkeypatch):

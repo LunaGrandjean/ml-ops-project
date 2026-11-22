@@ -36,7 +36,7 @@ def finish_candidate(
     engine = Predictor(
         settings.model_copy(update={"model_uri": f"models:/{settings.model_name}/{version}"})
     )
-    from trajectory_mlops.api.main import Prediction
+    from trajectory_mlops.api.schemas import Prediction
 
     # Verify artifact transfer and serving contract before moving the alias.
     Prediction.model_validate(engine.predict(Image.new("RGB", (128, 128), "white")))
