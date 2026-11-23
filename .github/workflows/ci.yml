@@ -17,8 +17,16 @@ jobs:
       - name: Validate GitHub Actions workflows
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -shellcheck= -pyflakes=
       - name: Validate Compose
-        env: {MINIO_ROOT_USER: ci-user, MINIO_ROOT_PASSWORD: ci-placeholder-password}
+        env:
+          MINIO_ROOT_USER: ci-user
+          MINIO_ROOT_PASSWORD: ci-placeholder-password
+          GRAFANA_ADMIN_PASSWORD: ci-placeholder-password
         run: docker compose config --quiet
+      - name: Validate Prometheus config and alert rules
+        run: >-
+          docker run --rm -v "$PWD/infra/prometheus:/etc/prometheus:ro"
+          --entrypoint promtool prom/prometheus:v3.5.0
+          check config /etc/prometheus/prometheus.yml
   model-integration:
     runs-on: ubuntu-latest
     steps:

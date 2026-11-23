@@ -10,7 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_compose_dependencies_and_services():
     compose = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
     services = compose["services"]
-    assert set(services) == {"minio", "init-bucket", "mlflow", "api", "ui"}
+    assert set(services) == {
+        "minio",
+        "init-bucket",
+        "mlflow",
+        "api",
+        "ui",
+        "prometheus",
+        "grafana",
+    }
     for service in services.values():
         assert set(service.get("depends_on", {})) <= set(services)
 
