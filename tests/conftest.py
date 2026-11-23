@@ -34,3 +34,17 @@ def dataset_params(tmp_path, monkeypatch):
         "training": {"epochs": 1, "batch_size": 8, "learning_rate": 0.001, "seed": 42},
         "evaluation": {"min_accuracy": 0.21},
     }
+
+
+@pytest.fixture(autouse=True)
+def isolate_mlflow_globals(request):
+    if request.node.get_closest_marker("ml") is None:
+        yield
+        return
+    mlflow = pytest.importorskip("mlflow")
+    tracking = mlflow.get_tracking_uri()
+    mlflow.set_registry_uri(None)
+    yield
+    mlflow.end_run()
+    mlflow.set_tracking_uri(tracking)
+    mlflow.set_registry_uri(None)

@@ -1,39 +1,88 @@
-name: Retrain candidate
+name: Retrain and release
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Train and compare without changing production or releasing
+        type: boolean
+        default: true
 permissions: {contents: read}
+# Covers promotion AND the called release. Coordinate manual alias writes.
+concurrency: {group: production, cancel-in-progress: false}
 jobs:
   train:
     environment: training
-    runs-on: [self-hosted, linux, mlops]
+    runs-on: ${{ fromJSON(vars.MLOPS_RUNNER_LABELS || '["self-hosted","macOS","mlops"]') }}
+    outputs:
+      promoted: ${{ steps.promotion.outputs.promoted }}
+      model_uri: ${{ steps.promotion.outputs.model_uri }}
     env:
       MLFLOW_TRACKING_URI: ${{ vars.MLFLOW_TRAINING_URI }}
       MLFLOW_EXPERIMENT_NAME: trajectory-classification
+      MODEL_NAME: ${{ vars.MODEL_NAME || 'trajectory-classifier' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ROOT_USER }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_ROOT_PASSWORD }}
       AWS_DEFAULT_REGION: us-east-1
       DATA_S3_ENDPOINT: ${{ vars.DATA_S3_ENDPOINT }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      DEPLOY_ENABLED: ${{ vars.ENABLE_K8S_DEPLOY }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with: {version: "0.12.23"}
-      - run: uv sync --frozen --extra ml --extra pipeline
+      - name: Check infrastructure configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$MLFLOW_TRACKING_URI"
+          test -n "$DATA_S3_ENDPOINT"
+          test -n "$AWS_ACCESS_KEY_ID"
+          test -n "$AWS_SECRET_ACCESS_KEY"
+          if [ "$DRY_RUN" != "true" ]; then
+            test "$DEPLOY_ENABLED" = "true"
+          fi
+      - run: uv sync --frozen --extra dev --extra ml --extra pipeline --extra ui
+      - run: uv run python -m ruff check .
+      - run: uv run python -m pytest -m "not e2e"
       - name: Pull versioned dataset and train
         shell: bash
         run: |
           set -euo pipefail
           test -f .dvc/config
           test -f data/source.dvc
-          test -n "$MLFLOW_TRACKING_URI"
+          rm -f artifacts/promotion.json artifacts/registry.json artifacts/run.json reports/evaluation.json
           uv run python -m dvc remote modify --local storage endpointurl "$DATA_S3_ENDPOINT"
           uv run python -m dvc pull data/source.dvc
           uv run python -m dvc repro --force
+      - name: Smoke-test candidate and compare with production
+        id: promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            uv run python -m trajectory_mlops.retraining --dry-run
+          else
+            uv run python -m trajectory_mlops.retraining
+          fi
+          cat artifacts/promotion.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
-          name: candidate-report
+          name: candidate-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             reports/evaluation.json
+            reports/confusion_matrix.png
             artifacts/run.json
             artifacts/registry.json
+            artifacts/promotion.json
             dvc.lock
-      # Promotion explicite après revue ; ne change pas le modèle en production.
+          if-no-files-found: warn
+  release:
+    needs: train
+    if: ${{ needs.train.outputs.promoted == 'true' }}
+    uses: ./.github/workflows/release.yml
+    with:
+      source_sha: ${{ github.sha }}
+      model_uri: ${{ needs.train.outputs.model_uri }}
+      promotion_locked: true
+    secrets: inherit

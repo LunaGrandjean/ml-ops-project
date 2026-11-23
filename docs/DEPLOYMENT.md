@@ -89,20 +89,20 @@ Variables :
 - MLFLOW_TRAINING_URI : URL du MLflow cible accessible au runner.
 - DATA_S3_ENDPOINT : URL S3 des données accessible au runner.
 
-Créer les environnements GitHub `production` et `training`. Installer un runner
-auto-hébergé **Linux** avec labels `self-hosted, linux, mlops`, docker/kubectl/python3
-et un kubeconfig donnant accès au cluster Docker Desktop. Un runner dans WSL/Linux
-convient si son accès au cluster est configuré et testé. Un runner GitHub hébergé
-ne voit pas votre cluster local. Garder les jobs PR sur les runners hébergés et
-réserver le runner local aux workflows de confiance.
+Create GitHub environments `production` and `training`. The default runner labels
+are `self-hosted, macOS, mlops` for the team's Mac with Docker Desktop Kubernetes.
+Override `MLOPS_RUNNER_LABELS` with a JSON array for another operating system.
+Install bash, Docker, kubectl and Python 3, and configure the runner's kubeconfig.
+Hosted GitHub runners cannot reach a local cluster. Keep PR jobs hosted and
+reserve local runners for trusted workflows. See [retraining](RETRAINING.md).
 
 ## Workflows
 
 - ci.yml : lint, tests, intégration ML synthétique et build des trois images.
 - release.yml : vérifie, publie les images taguées au SHA puis déploie si activé.
-- retrain.yml : lancement manuel, récupère les données DVC, exécute le DAG,
-  enregistre un candidat et conserve les rapports ; promotion ensuite explicite.
-  Ce workflow nécessite le remote DVC et le pointeur data/raw.dvc committés.
+- retrain.yml: manual DVC pull and full DAG, candidate artifact smoke check,
+  guarded promotion, then reusable release only when promoted. Dry run is the
+  default. Requires the committed `data/source.dvc` pointer and configured remote.
 
 Déclencher une livraison avec un tag, par exemple `v0.1.0`, après configuration
 des secrets. Le déploiement utilise des images identifiées par SHA, sans écraser latest.
@@ -113,7 +113,8 @@ des secrets. Le déploiement utilise des images identifiées par SHA, sans écra
 - SQLite MLflow : une réplique et stratégie Recreate pour le volume persistant.
 - Sur échec de chargement, l'API reste live mais non ready ; corriger la config,
   vérifier les services puis redémarrer le déploiement.
-- Le smoke test de CD vérifie la readiness ; le test complet d'une image réelle
-  reste à exécuter avec les données autorisées.
+- CD checks readiness, an HTTP prediction and the served model version using a
+  generated image. Also run the smoke command with an authorized GBG500 window
+  for the project demonstration; generated images do not measure model quality.
 - Exposer les services par port-forward pour la démonstration locale ; pas
   d'authentification Internet ou d'Ingress public dans ce socle.
