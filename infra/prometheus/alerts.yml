@@ -1,0 +1,61 @@
+# Alerts for the trajectory API, grouped by monitoring layer.
+# They show up under Prometheus > Alerts. There is no Alertmanager, so nothing is sent.
+# The baselines quoted below were measured on the 736-image test split through the Compose API.
+groups:
+  - name: trajectory-api
+    rules:
+      # Layer 1: service health
+      - alert: ApiDown
+        expr: up{job="trajectory-api"} == 0
+        for: 1m
+        labels: {severity: page, layer: service}
+        annotations:
+          summary: "Prometheus cannot scrape the API for 1 minute"
+          action: "Check the api container or pod logs, then its /health/live endpoint."
+
+      - alert: ModelNotReady
+        expr: trajectory_model_ready == 0
+        for: 2m
+        labels: {severity: page, layer: service}
+        annotations:
+          summary: "The API is running but has no model loaded"
+          action: "Check MODEL_URI and that MLflow can resolve it, then restart the API."
+
+      - alert: PredictErrorRateHigh
+        expr: |
+          sum(rate(trajectory_api_requests_total{route="/predict",status=~"5.."}[5m]))
+            / sum(rate(trajectory_api_requests_total{route="/predict"}[5m])) > 0.05
+        for: 2m
+        labels: {severity: page, layer: service}
+        annotations:
+          summary: "More than 5% of /predict requests fail with a 5xx"
+          action: "Read the API logs for inference errors."
+
+      - alert: PredictLatencyP95High
+        # Measured on the test replay: client-side p95 8.8 ms; Prometheus' bucket-interpolated
+        # estimate was 38 ms (buckets are coarse). 0.25 s is a bucket boundary, so it is exact.
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(trajectory_api_request_duration_seconds_bucket{route="/predict"}[5m]))
+          ) > 0.25
+        for: 5m
+        labels: {severity: ticket, layer: service}
+        annotations:
+          summary: "/predict p95 latency above 250 ms"
+          action: "Check CPU limits and whether the API pod is being throttled."
+
+      # Layer 2: prediction distribution (no ground-truth labels arrive in production)
+      - alert: RecklessShareHigh
+        # Measured baseline: 16 of 736 test predictions (2.2%) are Reckless.
+        # The volume guard stops a handful of requests from firing the alert.
+        expr: |
+          (
+            sum(increase(trajectory_predictions_total{class="Reckless"}[30m]))
+              / sum(increase(trajectory_predictions_total[30m])) > 0.10
+          )
+          and on() sum(increase(trajectory_predictions_total[30m])) >= 20
+        for: 10m
+        labels: {severity: ticket, layer: prediction}
+        annotations:
+          summary: "Over 10% of recent predictions are Reckless (test baseline 2.2%)"
+          action: "Compare the class mix with the test baseline; it may be input drift or a bad model version."
