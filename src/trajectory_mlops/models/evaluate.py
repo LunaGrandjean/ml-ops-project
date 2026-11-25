@@ -1,4 +1,4 @@
-"""Évaluation finale sur test et enregistrement du candidat (sans promotion)."""
+"""Final evaluation on test and registration of the candidate (no promotion)."""
 
 import json
 from pathlib import Path
@@ -67,7 +67,7 @@ def evaluate():
         ),
         encoding="utf-8",
     )
-    print(f"Candidat enregistré : {settings.model_name} v{version.version}")
+    print(f"Candidate registered: {settings.model_name} v{version.version}")
 
 
 if __name__ == "__main__":

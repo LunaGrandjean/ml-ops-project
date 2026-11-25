@@ -1,45 +1,45 @@
-# Checklist de rendu
+# Submission checklist
 
-Date limite : **25 novembre 2026, 20 h (Europe/Paris)**.
-Présentation : **26 novembre**, 10 min puis 10 min de questions.
-Transmettre les noms des cinq membres avant le **20 novembre**.
+Deadline: **25 November 2026, 20:00 (Europe/Paris)**.
+Presentation: **26 November**, 10 min + 10 min of questions.
+Group names sent to the teachers on **20 November** (done).
 
-## Dépôt et preuves
+## Repository and evidence
 
-- [ ] Cinq noms et contributions complétés dans TEAM.md.
-- [ ] Code preprocessing, entraînement, évaluation, API et interface.
-- [ ] DAG fonctionnel visible dans dvc.yaml et via dvc dag.
-- [ ] CI GitHub Actions verte ; historique de PR et revues d'équipe.
-- [ ] Dataset versionné et accès partagé documenté, sans publication non autorisée.
-- [ ] Runs MLflow, métriques, paramètres, versions et modèle stocké sur MinIO.
-- [ ] Baselines, accuracy et macro-F1 réelles dans le README.
-- [ ] Trois liens Docker Hub (api, ui, tracking).
-- [ ] API, UI, MLflow et MinIO sur Kubernetes local.
-- [ ] Swagger et une véritable prédiction testés de bout en bout.
-- [ ] Captures ajoutées à docs/screenshots et reliées dans le README.
-- [ ] Instructions validées depuis un nouveau clone.
-- [ ] Tag final et commit exact du rendu consignés.
+- [x] Five names and contributions in TEAM.md.
+- [x] Code for preprocessing, training, evaluation, API and web app.
+- [x] Working DAG in dvc.yaml, visible with `dvc dag`.
+- [x] Green GitHub Actions CI; pull request history with team reviews.
+- [x] Versioned dataset with documented shared access, without unauthorised publication.
+- [x] MLflow runs, metrics, parameters, versions and model stored on MinIO.
+- [x] Real baselines, accuracy and macro-F1 in the README.
+- [ ] Three Docker Hub links (api, ui, tracking) in the README.
+- [ ] API, web app, MLflow and MinIO running on local Kubernetes.
+- [ ] Swagger and a real prediction tested end to end.
+- [ ] Screenshots added to docs/screenshots and linked from the README.
+- [ ] Instructions checked from a fresh clone.
+- [ ] Final tag and exact submitted commit recorded.
 
-## Email à envoyer par le groupe
+## Email to send as a group
 
-Destinataires : celia.doclot@hotmail.fr et matthieu.decibeins@protonmail.com
-Objet contenant : **[ALBERT][MLOPS]**
+Recipients: celia.doclot@hotmail.fr and matthieu.decibeins@protonmail.com
+Subject containing: **[ALBERT][MLOPS]**
 
-Inclure :
-- lien du dépôt GitHub, tag/commit final ;
-- liste des cinq membres ;
-- URLs des images Docker Hub ;
-- URLs d'accès si déploiement distant (bonus), modalités d'accès si nécessaire.
+Include:
+- GitHub repository link and final tag/commit;
+- list of the five members;
+- Docker Hub image URLs;
+- access URLs if deployed remotely (bonus), with access details if needed.
 
-Ce document est une checklist ; aucun email n'est envoyé automatiquement.
+This document is a checklist; no email is sent automatically.
 
-## Proposition pour les 10 minutes
+## Suggested 10-minute plan
 
-1. Problème, données et cinq classes : 1 min.
-2. Architecture et DAG : 2 min.
-3. Tracking, baselines et résultats : 2 min.
-4. Démo image → UI → API → modèle versionné sur Kubernetes : 3 min.
-5. CI/CD, collaboration et limites : 2 min.
+1. Problem, data and the five classes: 1 min.
+2. Architecture and DAG: 2 min.
+3. Tracking, baselines and results: 2 min.
+4. Demo: image → web app → API → versioned model on Kubernetes: 3 min.
+5. CI/CD, collaboration and limitations: 2 min.
 
-Préparer les réponses sur les fuites de données, le choix des métriques, le versionnement,
-le stockage des modèles, les secrets, la promotion et le rollback.
+Prepare answers on data leakage, metric choice, versioning, model storage, secrets,
+promotion and rollback.

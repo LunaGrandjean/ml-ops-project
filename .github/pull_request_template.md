@@ -1,11 +1,11 @@
-## Objectif
-<!-- Problème résolu et comportement obtenu. -->
+## Goal
+<!-- Problem solved and resulting behaviour. -->
 
-## Vérification
-- [ ] Ruff et tests passent
-- [ ] Documentation mise à jour si nécessaire
-- [ ] Aucun secret, dataset Inside ou poids ajouté à Git
-- [ ] Relecture par un autre membre
+## Checklist
+- [ ] Ruff and tests pass
+- [ ] Documentation updated if needed
+- [ ] No secret, Inside dataset or model weights added to Git
+- [ ] Reviewed by another team member
 
-## Résultats ML (si applicable)
-<!-- Run ID, version du dataset, baseline, accuracy, macro-F1, limites. -->
+## ML results (if applicable)
+<!-- Run ID, dataset version, baseline, accuracy, macro-F1, limitations. -->

@@ -1,4 +1,4 @@
-"""Même transformation en entraînement et en inférence."""
+"""Same image transformation for training and inference."""
 
 import numpy as np
 from PIL import Image, ImageOps

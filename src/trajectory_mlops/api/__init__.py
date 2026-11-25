@@ -1,1 +1,1 @@
-"""API HTTP et contrat d'inférence."""
+"""HTTP API and inference contract."""

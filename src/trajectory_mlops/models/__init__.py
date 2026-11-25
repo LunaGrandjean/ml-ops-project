@@ -1,1 +1,1 @@
-"""Modèle de départ et entraînement. Installer l'extra ml pour les utiliser."""
+"""Model, training and evaluation. Install the `ml` extra to use them."""

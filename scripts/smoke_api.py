@@ -1,4 +1,4 @@
-"""Test HTTP d'une API réelle avec une image choisie par l'utilisateur."""
+"""HTTP smoke test of a running API with an image chosen by the user."""
 
 import argparse
 import json

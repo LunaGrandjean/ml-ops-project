@@ -1,4 +1,4 @@
-"""Contrat de classes partagé par le dataset, l'entraînement et l'API."""
+"""Class contract and settings shared by the dataset, training and the API."""
 
 from pathlib import Path
 

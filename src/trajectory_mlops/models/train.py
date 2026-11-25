@@ -1,4 +1,4 @@
-"""Entraîner sur train, sélectionner sur validation, tracer dans MLflow/MinIO."""
+"""Train on train, select the best epoch on validation, track everything in MLflow/MinIO."""
 
 import copy
 import json
@@ -107,7 +107,7 @@ def train():
             if score > best_f1:
                 best_f1, best_state = score, copy.deepcopy(model.state_dict())
         if best_state is None:
-            raise ValueError("training.epochs doit être supérieur à zéro.")
+            raise ValueError("training.epochs must be greater than zero.")
         model.load_state_dict(best_state)
         model.eval()
         scripted = torch.jit.script(model)

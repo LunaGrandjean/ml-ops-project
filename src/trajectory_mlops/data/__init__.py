@@ -1,1 +1,1 @@
-"""Validation des images, manifeste et prétraitement partagé."""
+"""Ride-to-image conversion, image validation, manifest and shared preprocessing."""

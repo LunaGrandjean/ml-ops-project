@@ -1,55 +1,55 @@
-# Déploiement Kubernetes et GitHub Actions
+# Kubernetes deployment and GitHub Actions
 
-Prérequis : Docker Desktop Kubernetes activé, kubectl sur le bon contexte,
-stockage dynamique disponible pour les PVC, images Docker Hub publiques ou
-imagePullSecrets configurés. Les manifests sont destinés à un cluster local.
+Requirements: Docker Desktop Kubernetes enabled, kubectl on the right context,
+dynamic storage available for the PVCs, and public Docker Hub images (or
+imagePullSecrets configured). The manifests target a local cluster.
 
-## Première initialisation du cluster
+## First cluster setup
 
-1. Construire et publier les trois images api, ui, tracking avec un même tag.
-   Le workflow release les construit après vérification, avec le SHA du commit.
-2. Créer le namespace et le secret puis le stockage :
+1. Build and publish the three images (api, ui, tracking) with the same tag.
+   The release workflow builds them after verification, tagged with the commit SHA.
+2. Create the namespace, the secret, then the storage:
 
-```powershell
+```bash
 kubectl apply -f k8s/namespace.yaml
-kubectl -n trajectory-mlops create secret generic storage-credentials --from-literal=MINIO_ROOT_USER=VOTRE_USER --from-literal=MINIO_ROOT_PASSWORD=VOTRE_PASSWORD
+kubectl -n trajectory-mlops create secret generic storage-credentials --from-literal=MINIO_ROOT_USER=YOUR_USER --from-literal=MINIO_ROOT_PASSWORD=YOUR_PASSWORD
 kubectl apply -f k8s/storage.yaml
 kubectl -n trajectory-mlops rollout status deployment/minio
 kubectl apply -f k8s/init-buckets.yaml
 kubectl -n trajectory-mlops wait --for=condition=complete job/init-buckets --timeout=180s
 ```
 
-3. Rendre puis appliquer les apps. Choisir un numéro de modèle existant pour les
-   déploiements reproductibles ; l'exemple de bootstrap utilise l'alias production :
+3. Render then apply the apps. Pick an existing model version number for
+   reproducible deployments; the bootstrap example uses the production alias:
 
-```powershell
-uv run python scripts/render_k8s.py --registry TON_COMPTE_DOCKERHUB --tag TON_SHA --model-uri models:/trajectory-classifier@production
+```bash
+uv run python scripts/render_k8s.py --registry YOUR_DOCKERHUB_USERNAME --tag YOUR_COMMIT_SHA --model-uri models:/trajectory-classifier@production
 kubectl apply -f k8s/rendered/apps.yaml
 kubectl -n trajectory-mlops rollout status deployment/mlflow --timeout=300s
-# Libérer le port dev avant le port-forward du registre de production.
+# Free the dev port before port-forwarding the production registry.
 docker compose stop mlflow
 kubectl -n trajectory-mlops port-forward service/mlflow 5001:5000
 ```
 
-4. **Bootstrap modèle** : le registre du cluster est initialement vide. L'API ne sera
-   pas ready et c'est attendu. Garder le port-forward MLflow dans un terminal,
-   puis suivre [Person 2 model handoff](#person-2-model-handoff). Après promotion,
-   redémarrer l'API pour qu'elle résolve l'alias :
+4. **Model bootstrap**: the cluster registry starts empty, so the API will not be
+   ready yet; this is expected. Keep the MLflow port-forward open in one terminal,
+   then follow [Person 2 model handoff](#person-2-model-handoff). After promotion,
+   restart the API so it resolves the alias:
 
-```powershell
+```bash
 kubectl -n trajectory-mlops rollout restart deployment/api
 kubectl -n trajectory-mlops rollout status deployment/api --timeout=300s
 ```
 
-5. Ouvrir dans deux autres terminaux :
+5. Open in two more terminals:
 
-```powershell
+```bash
 kubectl -n trajectory-mlops port-forward service/api 8000:8000
 kubectl -n trajectory-mlops port-forward service/ui 8501:8501
 ```
 
-Tester Swagger, la prédiction par l'UI et `scripts/smoke_api.py`. Garder des captures
-du cluster, du bucket, du run et de la version du modèle servi.
+Test Swagger, a prediction from the web app and `scripts/smoke_api.py`. Keep
+screenshots of the cluster, the bucket, the run and the served model version.
 
 ## Person 2 model handoff
 
@@ -77,17 +77,17 @@ after promotion and check readiness, the returned `model_version`, and a
 prediction from a real GBG500 window. The MLflow server stores the model in the
 cluster's MinIO bucket through its artifact store.
 
-## Configuration GitHub
+## GitHub configuration
 
-Secrets à créer :
-- DOCKERHUB_USERNAME / DOCKERHUB_TOKEN : token autorisé à publier les images.
-- MINIO_ROOT_USER / MINIO_ROOT_PASSWORD : stockage du cluster.
+Secrets to create:
+- `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`: token allowed to publish the images.
+- `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`: cluster storage.
 
-Variables :
-- ENABLE_K8S_DEPLOY : `true` uniquement lorsque le runner et le modèle cible sont prêts.
-- MODEL_URI : `models:/trajectory-classifier/NUMERO` recommandé en production.
-- MLFLOW_TRAINING_URI : URL du MLflow cible accessible au runner.
-- DATA_S3_ENDPOINT : URL S3 des données accessible au runner.
+Variables:
+- `ENABLE_K8S_DEPLOY`: `true` only once the runner and the target model are ready.
+- `MODEL_URI`: `models:/trajectory-classifier/NUMBER` recommended in production.
+- `MLFLOW_TRAINING_URI`: URL of the target MLflow server, reachable from the runner.
+- `DATA_S3_ENDPOINT`: S3 URL of the data, reachable from the runner.
 
 Create GitHub environments `production` and `training`. The default runner labels
 are `self-hosted, macOS, mlops` for the team's Mac with Docker Desktop Kubernetes.
@@ -98,23 +98,23 @@ reserve local runners for trusted workflows. See [retraining](RETRAINING.md).
 
 ## Workflows
 
-- ci.yml : lint, tests, intégration ML synthétique et build des trois images.
-- release.yml : vérifie, publie les images taguées au SHA puis déploie si activé.
-- retrain.yml: manual DVC pull and full DAG, candidate artifact smoke check,
+- `ci.yml`: lint, tests, synthetic ML integration test and build of the three images.
+- `release.yml`: verifies, publishes the images tagged with the commit SHA, then deploys if enabled.
+- `retrain.yml`: manual DVC pull and full DAG, candidate artifact smoke check,
   guarded promotion, then reusable release only when promoted. Dry run is the
   default. Requires the committed `data/source.dvc` pointer and configured remote.
 
-Déclencher une livraison avec un tag, par exemple `v0.1.0`, après configuration
-des secrets. Le déploiement utilise des images identifiées par SHA, sans écraser latest.
+Trigger a release with a tag, for example `v0.1.0`, once the secrets are configured.
+Deployments use images identified by commit SHA and never overwrite `latest`.
 
-## Vérifications et limites
+## Checks and limitations
 
-- Un premier déploiement sans modèle n'est pas un déploiement d'inférence terminé.
-- SQLite MLflow : une réplique et stratégie Recreate pour le volume persistant.
-- Sur échec de chargement, l'API reste live mais non ready ; corriger la config,
-  vérifier les services puis redémarrer le déploiement.
+- A first deployment without a model is not a finished inference deployment.
+- MLflow on SQLite: one replica and the Recreate strategy for the persistent volume.
+- If the model fails to load, the API stays live but not ready; fix the configuration,
+  check the services, then restart the deployment.
 - CD checks readiness, an HTTP prediction and the served model version using a
-  generated image. Also run the smoke command with an authorized GBG500 window
+  generated image. Also run the smoke command with an authorised GBG500 window
   for the project demonstration; generated images do not measure model quality.
-- Exposer les services par port-forward pour la démonstration locale ; pas
-  d'authentification Internet ou d'Ingress public dans ce socle.
+- Services are exposed with port-forward for the local demonstration; there is no
+  internet authentication or public Ingress in this setup.

@@ -1,70 +1,74 @@
-# Exploitation et données
+# Operations and data
 
-## Démarrer, inspecter, arrêter
+## Start, inspect, stop
 
-```powershell
+```bash
 docker compose up -d --build
 docker compose ps
 docker compose logs --tail 100 mlflow api
 docker compose stop
 ```
 
-Le stockage survit à l'arrêt grâce aux volumes. Conserver les volumes pour garder
-les modèles et les métadonnées. L'API peut démarrer sans modèle ; sa readiness reste
-à 503 jusqu'à configuration d'un modèle valide puis redémarrage.
+Storage survives a stop thanks to the volumes: keep them to keep the models and the
+metadata. The API can start without a model; its readiness stays at 503 until a valid
+model is configured and the API is restarted.
 
-## Versionner les données via MinIO
+## Data versioning with DVC and MinIO
 
-Après initialisation de Git et DVC et dépôt des images Inside dans data/raw :
+The source data (`data/source/`) is already tracked with DVC (`data/source.dvc`) and the
+default remote `storage` (`s3://datasets/dvc`, endpoint `http://localhost:9000`) is
+configured in `.dvc/config`. With MinIO running (`docker compose up -d minio init-bucket`):
 
-```powershell
-git rm --ignore-unmatch data/raw/.gitkeep
-uv run python -m dvc add data/raw
-uv run python -m dvc remote add -d storage s3://datasets/trajectories
-uv run python -m dvc remote modify --local storage endpointurl http://localhost:9000
-$env:AWS_ACCESS_KEY_ID = "IDENTIFIANT_DE_VOTRE_MINIO"
-$env:AWS_SECRET_ACCESS_KEY = "MOT_DE_PASSE_DE_VOTRE_MINIO"
-$env:AWS_DEFAULT_REGION = "us-east-1"
-uv run python -m dvc push
-git add .dvc data/raw.dvc data/.gitignore
-git commit -m "Version initial trajectory dataset"
-uv run python -m dvc repro
-git add dvc.lock
-git commit -m "Record pipeline versions"
+```bash
+export AWS_ACCESS_KEY_ID=<MINIO_ROOT_USER> AWS_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD>
+uv run dvc pull                 # download the data recorded in data/source.dvc
+uv run dvc repro                # rerun the DAG; dvc.lock records the versions
+uv run dvc push                 # upload new DVC outputs (images, model) to MinIO
 ```
 
-Ne lancer `remote add` qu'une fois. Les identifiants et endpoint locaux ne doivent
-pas être versionnés. `localhost` désigne la machine de chaque membre : pour partager
-les données, remplacer l'endpoint local par un MinIO accessible au groupe ou un S3
-autorisé. Chaque membre configure ce endpoint avec `--local`.
+After changing the source data:
 
-Depuis un clone, installer avec `uv sync --frozen --extra ml --extra pipeline --extra dev`,
-configurer le remote et les identifiants, puis `uv run python -m dvc pull`.
-Pour restaurer une version : `git checkout TAG`, puis `uv run python -m dvc pull`
-pour récupérer les octets manquants et remettre les données à la version du pointeur.
+```bash
+uv run dvc add data/source
+uv run dvc push
+git add data/source.dvc
+git commit -m "Update source data"
+```
 
-Le cache DVC peut restaurer des références à un ancien run. Reproduire les fichiers
-ne restaure pas un serveur MLflow supprimé. Pour créer un nouveau run dans un
-registre vide : `uv run python -m dvc repro --force` avec le bon tracking URI.
+Never commit credentials. `localhost` is each member's own machine: MinIO runs locally,
+so each member first copies the Inside files into `data/source/` and runs `dvc push`
+to their own MinIO. To share one remote, point the endpoint at a MinIO or S3 reachable
+by the whole group with `uv run dvc remote modify --local storage endpointurl <URL>`.
 
-## Erreurs fréquentes
+From a fresh clone: `uv sync --frozen --extra ml --extra pipeline --extra dev`, set the
+credentials, then `uv run dvc pull`. To restore an older version: `git checkout TAG`,
+then `uv run dvc pull` to get the matching bytes.
 
-- `Accès refusé` sur mlflow/dvc : utiliser `uv run python -m mlflow` ou
-  `uv run python -m dvc`, comme dans le TP.
-- Readiness 503 : consulter les logs, vérifier MODEL_URI, version/alias et serveur cible.
-- MLflow inaccessible : vérifier son port local 5001, les allowed-hosts et le service MinIO.
-- Promotion refusée : consulter le rapport ; le modèle doit dépasser les baselines.
-- DVC missing files : le responsable des données doit avoir fait `dvc push`.
-- Docker indisponible : démarrer Docker Desktop et choisir les conteneurs Linux.
+The DVC cache can restore references to an old run, but reproducing the files does not
+restore a deleted MLflow server. To create a new run in an empty registry:
+`uv run dvc repro --force` with the right tracking URI.
+
+## Common errors
+
+- `Permission denied` on mlflow/dvc: use `uv run python -m mlflow` or
+  `uv run python -m dvc`, as in the class TP.
+- Readiness 503: check the logs, `MODEL_URI`, the version/alias and the target server.
+- MLflow unreachable: check local port 5001, the allowed hosts and the MinIO service.
+- `Unable to locate credentials` from DVC: export `AWS_ACCESS_KEY_ID` and
+  `AWS_SECRET_ACCESS_KEY` in the current terminal.
+- Promotion refused: read the report; the model must beat the baselines and the
+  current `@production` model.
+- DVC missing files: the data owner must have run `dvc push`.
+- Docker unavailable: start Docker Desktop (Linux containers).
 
 ## Reproduction
 
-Conserver commit Git, uv.lock, dvc.lock, version du dataset, paramètres, environnement
-CPU/GPU et run ID. Les seeds sont fixées pour le prototype CPU ; une égalité numérique
-entre matériels/bibliothèques différents n'est pas garantie.
+Keep the Git commit, `uv.lock`, `dvc.lock`, the dataset version, the parameters, the
+CPU/GPU environment and the run ID. Seeds are fixed for the CPU prototype; exact
+numerical equality across different hardware or library versions is not guaranteed.
 
 ## Rollback
 
-Choisir une version antérieure évaluée dans le registre cible. Définir MODEL_URI
-à `models:/trajectory-classifier/NUMERO` puis recréer l'API Compose ou déclencher le
-déploiement Kubernetes. Vérifier la version renvoyée par /predict et relancer le smoke test.
+Pick an earlier evaluated version in the target registry. Set `MODEL_URI` to
+`models:/trajectory-classifier/NUMBER`, then recreate the Compose API or trigger the
+Kubernetes deployment. Check the version returned by `/predict` and rerun the smoke test.
