@@ -25,6 +25,8 @@ spec:
             - --serve-artifacts
             - --artifacts-destination=s3://mlflow-artifacts
             - --allowed-hosts=localhost:*,127.0.0.1:*,mlflow,mlflow:*
+            # One worker: the default 4 exceeded the memory limit and were OOM-killed.
+            - --workers=1
           env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -46,7 +48,7 @@ spec:
             periodSeconds: 10
           resources:
             requests: {cpu: 100m, memory: 256Mi}
-            limits: {cpu: "1", memory: 1Gi}
+            limits: {cpu: "1", memory: 2Gi}
           volumeMounts:
             - {name: metadata, mountPath: /home/app/mlflow}
       volumes:
