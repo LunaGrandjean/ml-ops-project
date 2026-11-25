@@ -1,18 +1,20 @@
-# Travailler à cinq
+# Working as a team of five
 
-1. Chaque tâche possède une issue, un responsable et des critères de fin.
-2. Partir de `main` à jour ; créer une branche `feat/...`, `fix/...` ou `docs/...`.
-3. Faire des commits courts et descriptifs. Aucun push direct sur main après bootstrap.
-4. Ouvrir une PR ; demander la revue d'un autre membre.
-5. Fusionner après CI verte. Résoudre les conflits dans la branche de travail.
-6. Mettre à jour la documentation et conserver les run IDs des expériences retenues.
+1. Each task has an issue, an owner and a definition of done.
+2. Start from an up-to-date `main`; create a `feat/...`, `fix/...` or `docs/...` branch.
+3. Make short, descriptive commits. No direct push to `main`.
+4. Open a pull request and ask another member to review it.
+5. Merge once CI is green. Resolve conflicts in the working branch.
+6. Update the documentation and keep the run IDs of the selected experiments.
 
-Protéger main dans GitHub : une approbation et les checks CI obligatoires.
-Remplir TEAM.md avec les cinq noms réels et partager les responsabilités.
+Protect `main` on GitHub: one approval and the CI checks required.
+Keep TEAM.md up to date with the five members and their responsibilities.
 
-Ne pas committer les secrets, images Inside, poids ou caches. Les métadonnées DVC
-(`.dvc`, `dvc.lock`) et `uv.lock` sont versionnées. Les notebooks éventuels
-servent à explorer ; déplacer le code réutilisable dans `src/`.
+All repository text (code, comments, docs, commit messages) is written in English.
 
-Lors d'une modification de dépendances : `uv lock`, vérifier les tests et
-committer ensemble `pyproject.toml` et `uv.lock`.
+Never commit secrets, Inside data, model weights or caches. DVC metadata
+(`.dvc`, `dvc.lock`) and `uv.lock` are versioned. Notebooks are only for exploration;
+move reusable code to `src/` or `scripts/`.
+
+When changing dependencies: run `uv lock`, check the tests, and commit
+`pyproject.toml` and `uv.lock` together.

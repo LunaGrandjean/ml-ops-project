@@ -1,4 +1,4 @@
-"""Petit CNN sans téléchargement de poids : baseline deep learning à améliorer."""
+"""Small CNN trained from scratch (no pretrained weights to download)."""
 
 import torch
 from torch import nn

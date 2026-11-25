@@ -1,36 +1,39 @@
-# Équipe, responsabilités et calendrier
+# Team, responsibilities and schedule
 
-Remplir les cinq noms puis envoyer la composition du groupe avant le **20/11/2026**.
+Group members (sent to the teachers on 20/11/2026):
 
-| Membre | Responsabilité principale | Livrable et revue croisée |
+| Name | Role | Main contributions (Git history up to 25/11/2026) |
 | --- | --- | --- |
-| 1 — À renseigner | Données / extraction Inside | Contrat, version DVC, split sans fuite ; revue membre 2 |
-| 2 — À renseigner | Modèle PyTorch / évaluation | Baselines, CNN amélioré, rapport ; revue membre 3 |
-| 3 — À renseigner | MLflow / MinIO / pipeline | Runs, modèles S3, DAG reproductible ; revue membre 4 |
-| 4 — À renseigner | API / interface / tests | Swagger, prédictions et tests HTTP ; revue membre 5 |
-| 5 — À renseigner | Docker / K8s / CI/CD | Images Docker Hub et démonstration cluster ; revue membre 1 |
+| Viviam Baiz | Member 1 – Data Engineer | DVC data versioning on MinIO, ride-to-image converter, split by ride, EDA, training-only augmentation, data tests, experiments 1–3 |
+| Hoang Ngoc-Tran | Member 2 – ML Engineer | Architecture justification, hyperparameter tuning, evaluation, model handoff bundle |
+| Luna Grandjean | Member 3 – MLOps Engineer (+ backend) | Champion/challenger promotion, retraining workflow, release of promoted models, FastAPI serving with confidence scores, Streamlit app, API metrics |
+| Dhia Ben Cheikh | Member 5 – DevOps Engineer (monitoring) | Prometheus scrape config, Grafana dashboard and alert rules |
+| Malek Saoudi | To confirm | To complete |
 
-Chaque membre contribue au README et sait expliquer le parcours complet.
-Répartir les issues ; éviter de réserver tous les tests à une seule personne.
+Cross-review: each member reviews the pull requests of another member
+(1 → 2 → 3 → 4 → 5 → 1).
 
-| Période | Objectif vérifiable |
+Every member contributes to the README and can explain the whole pipeline.
+Tests are shared: each member writes the tests for their own part.
+
+| Period | Checkable goal |
 | --- | --- |
-| 12–15 novembre | Valider les données et démarrer Compose ; CI verte |
-| 16–19 novembre | Premier entraînement MLflow/S3 ; API et UI reliées au modèle |
-| Avant le 20 novembre | Transmettre les noms du groupe |
-| 20–22 novembre | Images Docker Hub ; services sur Kubernetes ; premiers tests e2e |
-| 23–24 novembre | Stabiliser les résultats, screenshots et répétition de présentation |
-| 25 novembre avant 20 h | Tag final, vérification depuis clone et envoi du rendu |
-| 26 novembre | Présentation 10 min + questions 10 min |
+| 12–15 November | Validate the data and start Compose; green CI |
+| 16–19 November | First MLflow/S3 training; API and web app connected to the model |
+| Before 20 November | Send the group names (done) |
+| 20–22 November | Docker Hub images; services on Kubernetes; first e2e tests |
+| 23–24 November | Stabilise results, screenshots and presentation rehearsal |
+| 25 November before 20:00 | Final tag, check from a fresh clone and send the submission |
+| 26 November | 10 min presentation + 10 min questions |
 
-Backlog minimum :
-- [ ] Confirmer structure/labels et indépendance des trajectoires Inside.
-- [ ] Mettre les données dans un remote partagé et versionné.
-- [ ] Mesurer majorité et hasard ; améliorer le CNN si nécessaire.
-- [ ] Tester promotion, version servie et rollback.
-- [ ] Valider Compose, images Docker Hub et Kubernetes.
-- [ ] Tester une prédiction depuis l'interface jusqu'au modèle réel.
-- [ ] Compléter résultats et preuves dans le README.
+Minimum backlog:
+- [x] Confirm the data structure, labels and ride independence (split by ride).
+- [x] Put the data in a versioned remote (DVC on MinIO).
+- [x] Measure the majority and random baselines; improve the CNN.
+- [x] Test promotion, served version and rollback.
+- [ ] Validate Compose, Docker Hub images and Kubernetes.
+- [ ] Test a prediction from the web app down to the real model.
+- [ ] Complete results and evidence (screenshots) in the README.
 
-Bonus seulement après le parcours minimum : réentraînement puis redéploiement
-automatique après validation, monitoring, feature store.
+Bonus after the minimum path: retraining then automatic redeployment after validation
+(done), monitoring (API metrics done, Prometheus/Grafana in review), feature store (not done).

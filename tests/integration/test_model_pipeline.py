@@ -1,4 +1,4 @@
-"""Intégration sur données synthétiques : aucune métrique de projet revendiquée."""
+"""Integration test on synthetic data: no project metric is claimed here."""
 
 import json
 from pathlib import Path

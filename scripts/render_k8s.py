@@ -1,4 +1,4 @@
-"""Rendre les manifests avec des images immuables, sans bibliothèque externe."""
+"""Render the Kubernetes manifests with immutable image tags (no external library)."""
 
 import argparse
 import json
@@ -8,11 +8,11 @@ from pathlib import Path
 
 def render(registry: str, tag: str, model_uri: str) -> str:
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", registry):
-        raise ValueError("registry doit être votre identifiant Docker Hub.")
+        raise ValueError("registry must be your Docker Hub username.")
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}", tag):
-        raise ValueError("Tag d'image invalide.")
+        raise ValueError("Invalid image tag.")
     if not model_uri.startswith("models:/"):
-        raise ValueError("Utiliser une URI MLflow : models:/nom/version ou @alias.")
+        raise ValueError("Use an MLflow URI: models:/name/version or models:/name@alias.")
     text = Path("k8s/apps.template.yaml").read_text(encoding="utf-8")
     return (
         text.replace("__REGISTRY__", registry)

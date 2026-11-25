@@ -13,7 +13,7 @@ def test_deployed_prediction():
     url = os.getenv("E2E_API_URL")
     path = os.getenv("E2E_IMAGE_PATH")
     if not url or not path:
-        pytest.skip("Définir E2E_API_URL et E2E_IMAGE_PATH pour tester le service réel.")
+        pytest.skip("Set E2E_API_URL and E2E_IMAGE_PATH to test the real service.")
     image = Path(path)
     import mimetypes
 
