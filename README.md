@@ -73,6 +73,11 @@ Services:
 - Web app (Streamlit): http://localhost:8501
 - MLflow: http://localhost:5001 (port 5001 avoids the class TP on 5000)
 - MinIO console: http://localhost:9001 (credentials in your `.env`)
+- Grafana: http://localhost:3000 (user `admin`, password `GRAFANA_ADMIN_PASSWORD` from your `.env`)
+- Prometheus: http://localhost:9090 (the Alerts tab lists the API alert rules)
+
+`GRAFANA_ADMIN_PASSWORD` is required. If your `.env` was created before monitoring was
+added, every `docker compose` command fails until you add that line from `.env.example`.
 
 Before a model is configured, `/health/live` returns 200 and `/health/ready` returns 503.
 The web app shows that no model is loaded.
@@ -248,8 +253,8 @@ E2E_API_URL=http://localhost:8000 E2E_IMAGE_PATH="data/raw/Safe/<RIDE_ID>_w00.pn
 - [Retraining and promotion](docs/RETRAINING.md): manual dry run, DVC retrieval,
   artifact smoke check, comparable champion/challenger gate and automatic release
   only for an improved candidate. Releases pin both the code SHA and a numbered model URI.
-- [API monitoring](docs/API_MONITORING.md): Prometheus endpoint, metric names,
-  scrape configuration and Grafana query examples.
+- [API monitoring](docs/API_MONITORING.md): Prometheus endpoint and metric names,
+  the provisioned Grafana dashboard and the alert rules (`infra/prometheus`, `infra/grafana`).
 - Operations, data versioning and rollback: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## Delivery status
@@ -260,5 +265,26 @@ E2E_API_URL=http://localhost:8000 E2E_IMAGE_PATH="data/raw/Safe/<RIDE_ID>_w00.pn
 | Split and leakage prevention | Split by ride, 70/15/15, at least one ride per class in each split |
 | Model experiments and majority baseline | See [reported experiments](#reported-experiments) |
 | Release | Tag `v0.1.0`, commit `64acc95243abe42d911384b68989f88bb9e63a43` |
-| Docker Hub images | `<DOCKERHUB_USERNAME>/trajectory-api`, `trajectory-ui`, `trajectory-tracking`, tag = release commit SHA. **TODO: add the public Docker Hub URLs** |
-| Screenshots (Kubernetes, Swagger, web app, MLflow, Grafana) | **TODO: add to `docs/screenshots/` and link here** |
+| Docker Hub images | [dbc0207/trajectory-api](https://hub.docker.com/r/dbc0207/trajectory-api), [dbc0207/trajectory-ui](https://hub.docker.com/r/dbc0207/trajectory-ui), [dbc0207/trajectory-tracking](https://hub.docker.com/r/dbc0207/trajectory-tracking), tag = release commit SHA `64acc95243abe42d911384b68989f88bb9e63a43` (public, linux/amd64) |
+| Kubernetes deployment | Release images on Docker Desktop Kubernetes, model `trajectory-classifier` v1 `@production`, real prediction served with `model_version: "1"` (see screenshots) |
+| Screenshots | See [Deployment evidence](#deployment-evidence) |
+
+## Deployment evidence
+
+Local Kubernetes (Docker Desktop), namespace `trajectory-mlops`, release images `64acc95`.
+
+**Pods:** API, web app, MLflow and MinIO ready, no restarts; the bucket job completed.
+
+![kubectl get pods](docs/screenshots/k8s_pods.png)
+
+**Swagger:** `POST /predict` with a GBG500 window image returns the label, the five scores and `model_version`.
+
+![Swagger prediction](docs/screenshots/swagger_predict.png)
+
+**Web app:** the same image gives the same prediction, with the score of each class.
+
+![Streamlit prediction](docs/screenshots/ui_predict.png)
+
+**MLflow:** the registered model `trajectory-classifier`, version 1 under the `@production` alias that the API loads.
+
+![MLflow registry](docs/screenshots/mlflow_model_production.png)

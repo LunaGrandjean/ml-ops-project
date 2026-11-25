@@ -13,10 +13,10 @@ Group names sent to the teachers on **20 November** (done).
 - [x] Versioned dataset with documented shared access, without unauthorised publication.
 - [x] MLflow runs, metrics, parameters, versions and model stored on MinIO.
 - [x] Real baselines, accuracy and macro-F1 in the README.
-- [ ] Three Docker Hub links (api, ui, tracking) in the README.
-- [ ] API, web app, MLflow and MinIO running on local Kubernetes.
-- [ ] Swagger and a real prediction tested end to end.
-- [ ] Screenshots added to docs/screenshots and linked from the README.
+- [x] Three Docker Hub links (api, ui, tracking) in the README.
+- [x] API, web app, MLflow and MinIO running on local Kubernetes.
+- [x] Swagger and a real prediction tested end to end.
+- [x] Screenshots added to docs/screenshots and linked from the README.
 - [ ] Instructions checked from a fresh clone.
 - [ ] Final tag and exact submitted commit recorded.
 

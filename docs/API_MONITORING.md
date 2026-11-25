@@ -21,34 +21,39 @@ supported. For multiple replicas, scrape each pod rather than a load-balanced
 Service and aggregate in Prometheus. Do not enable multiple Uvicorn workers
 without adding Prometheus multiprocess support.
 
-## Member 5 integration
+## Prometheus and Grafana (Compose)
 
-For Compose, place Prometheus on the API's network and add a scrape job:
+`docker compose up -d` starts Prometheus and Grafana next to the API.
+Set `GRAFANA_ADMIN_PASSWORD` in `.env` first (see `.env.example`).
 
-```yaml
-scrape_configs:
-  - job_name: trajectory-api
-    scrape_interval: 15s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["api:8000"]
-```
+| Service | URL | Configuration |
+| --- | --- | --- |
+| Prometheus | http://localhost:9090 | `infra/prometheus/prometheus.yml` scrapes `api:8000/metrics` every 15 s (job `trajectory-api`), 7-day retention |
+| Grafana | http://localhost:3000 (user `admin`) | Datasource and dashboard provisioned from `infra/grafana`; the "Trajectory API · monitoring" dashboard (folder MLOps) is the home page |
 
-For Kubernetes, the API pod template includes prometheus.io/scrape, port and path
-annotations. Configure Prometheus pod discovery to honor them in namespace
-trajectory-mlops, or configure an explicit pod scrape. Annotations alone do not
-install Prometheus or create a dashboard. There is no ServiceMonitor dependency.
+The dashboard has two rows: service health (scrape status, model loaded,
+`/predict` throughput, 5xx share, p50/p95 latency) and prediction distribution
+(predictions per class, class share over 30 minutes, mean top-class score).
+It is read-only in the UI: edit `infra/grafana/dashboards/trajectory-api.json` instead.
 
-Suggested Grafana panels:
+Alert rules live in `infra/prometheus/alerts.yml` and show under Prometheus > Alerts.
+There is no Alertmanager, so nothing is sent.
 
-```promql
-sum(rate(trajectory_api_requests_total{route="/predict"}[5m]))
-sum(rate(trajectory_api_requests_total{route="/predict",status=~"5.."}[5m]))
-histogram_quantile(0.95, sum by (le) (rate(trajectory_api_request_duration_seconds_bucket{route="/predict"}[5m])))
-sum by (class) (rate(trajectory_predictions_total[5m]))
-sum by (class) (rate(trajectory_prediction_confidence_sum[5m])) / clamp_min(sum by (class) (rate(trajectory_prediction_confidence_count[5m])), 0.000001)
-min(trajectory_model_ready)
-```
+| Alert | Fires when | Severity |
+| --- | --- | --- |
+| ApiDown | Prometheus cannot scrape the API for 1 min | page |
+| ModelNotReady | `trajectory_model_ready == 0` for 2 min | page |
+| PredictErrorRateHigh | over 5% of `/predict` requests return 5xx for 2 min | page |
+| PredictLatencyP95High | `/predict` p95 above 250 ms for 5 min | ticket |
+| RecklessShareHigh | over 10% Reckless predictions in 30 min (at least 20 predictions; test baseline 2.2%) | ticket |
+
+CI checks the configuration with `promtool check config`, and
+`tests/unit/test_monitoring_config.py` fails if the dashboard or alerts query a
+metric the API does not expose.
+
+Kubernetes: the API pod template includes prometheus.io/scrape, port and path
+annotations, but the cluster deployment does not install Prometheus or Grafana.
+Monitoring runs in the Compose stack only.
 
 Latency is in seconds and includes image decoding and inference. The confidence
 panel shows uncalibrated model scores; it cannot measure live accuracy or drift

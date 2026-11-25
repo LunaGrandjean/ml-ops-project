@@ -32,8 +32,8 @@ Minimum backlog:
 - [x] Measure the majority and random baselines; improve the CNN.
 - [x] Test promotion, served version and rollback.
 - [ ] Validate Compose, Docker Hub images and Kubernetes.
-- [ ] Test a prediction from the web app down to the real model.
-- [ ] Complete results and evidence (screenshots) in the README.
+- [x] Test a prediction from the web app down to the real model.
+- [x] Complete results and evidence (screenshots) in the README.
 
 Bonus after the minimum path: retraining then automatic redeployment after validation
-(done), monitoring (API metrics done, Prometheus/Grafana in review), feature store (not done).
+(done), monitoring (done in Compose: API metrics, Prometheus alerts, Grafana dashboard), feature store (not done).
